@@ -1,4 +1,4 @@
-name: 构建跨平台签到工具
+name: Build Cross-Platform Apps
 
 on:
   push:
@@ -6,66 +6,75 @@ on:
     paths:
       - 'ccc_attendance_with_UI.py'
       - '.github/workflows/main.yml'
-  workflow_dispatch:   
+  workflow_dispatch:
 
-# 定义两个并行任务：Windows 和 macOS
 jobs:
-  # ========== Windows 打包任务 ==========
   build-windows:
-    # 在 Windows 虚拟机上运行
     runs-on: windows-latest
-
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 设置 Python 3.11
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: 安装依赖
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir pyinstaller qrcode[pil]
 
-      - name: 安装 UPX（压缩可执行文件）
+      - name: Install UPX
         run: choco install upx -y
-      - name: 打包为 Windows 可执行文件
-        run: pyinstaller --onefile --windowed --noconfirm --clean --name "CCC Attendance" ccc_attendance_with_UI.py
 
-      - name: 上传 Windows 构建结果
+      - name: Build Windows Executable
+        run: >
+          pyinstaller --onefile --windowed --noconfirm --clean
+          --name "CCC Attendance"
+          --exclude-module tkinter.test
+          --exclude-module unittest
+          --exclude-module pydoc
+          ccc_attendance_with_UI.py
+
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
           name: CCC_Attendance_Windows_x64
           path: "dist/CCC Attendance.exe"
 
-  # ========== macOS 打包任务 ==========
   build-macos:
     runs-on: macos-latest
-
     steps:
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 设置 Python 3.11
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: 安装依赖
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir pyinstaller qrcode[pil]
 
-      - name: 安装 UPX（可选，用于压缩二进制）
+      - name: Install UPX
         run: brew install upx || true
-      - name: 打包为 macOS 应用
-        run: pyinstaller --onefile --windowed --strip --noconfirm --clean --name "CCC Attendance" ccc_attendance_with_UI.py
-      - name: 生成 DMG 安装包
+
+      - name: Build macOS App
+        run: >
+          pyinstaller --onefile --windowed --strip --noconfirm --clean
+          --name "CCC Attendance"
+          --exclude-module tkinter.test
+          --exclude-module unittest
+          --exclude-module pydoc
+          ccc_attendance_with_UI.py
+
+      - name: Generate DMG
         run: hdiutil create -volname "CCC Attendance" -srcfolder "dist/CCC Attendance.app" -ov -format UDZO "dist/CCC Attendance.dmg"
 
-      - name: 上传 macOS 构建结果
+      - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: CCC_Attendance_macOS
