@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'ccc_attendance_with_UI.py'
+      - 'main.py'
       - '.github/workflows/main.yml'
   workflow_dispatch:
 
@@ -103,7 +103,7 @@ jobs:
           --exclude-module tkinter.test
           --exclude-module unittest
           --exclude-module pydoc
-          ccc_attendance_with_UI.py
+          main.py
 
       - name: Generate DMG
         run: |
