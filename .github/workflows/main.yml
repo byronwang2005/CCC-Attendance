@@ -24,6 +24,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --no-cache-dir pyinstaller qrcode[pil] Pillow
+          brew install create-dmg
 
       - name: Prepare Icon
         shell: python
@@ -105,7 +106,20 @@ jobs:
           ccc_attendance_with_UI.py
 
       - name: Generate DMG
-        run: hdiutil create -volname "CCC Attendance" -srcfolder "dist/CCC Attendance.app" -ov -format UDZO "dist/CCC Attendance.dmg"
+        run: |
+          mkdir -p dmg_root
+          cp -r "dist/CCC Attendance.app" dmg_root/
+          rm -f "dist/CCC Attendance.dmg"
+          create-dmg \
+            --volname "CCC Attendance" \
+            --window-pos 200 120 \
+            --window-size 600 300 \
+            --icon-size 100 \
+            --icon "CCC Attendance.app" 175 120 \
+            --hide-extension "CCC Attendance.app" \
+            --app-drop-link 425 120 \
+            "dist/CCC Attendance.dmg" \
+            "dmg_root/"
 
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
