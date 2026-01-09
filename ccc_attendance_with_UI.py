@@ -31,8 +31,16 @@ class QRGeneratorApp:
     def __init__(self, root):
         self.root = root
         root.title("UNNC中国文化课签到二维码生成器")
-        root.geometry("640x920")
-        root.resizable(False, False)
+        window_width = 720
+        window_height = 1000
+        root.update_idletasks()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        center_x = int((screen_width - window_width) / 2)
+        center_y = int((screen_height - window_height) / 2)
+        root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
+        root.minsize(600, 800)
+        root.resizable(True, True)
         root.configure(bg="#faf6ef")
         style = ttk.Style()
         try:
