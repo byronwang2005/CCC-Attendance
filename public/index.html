@@ -10,10 +10,8 @@
   <title>UNNC中国文化课签到二维码生成器</title>
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="preload" href="public/ccc.webp" as="image" type="image/webp">
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" as="script">
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" async></script>
-  <link rel="icon" type="image/svg" href="public/favicon.svg">
+  <link rel="preload" href="ccc.webp" as="image" type="image/webp">
+  <link rel="icon" type="image/svg" href="favicon.svg">
   <style>
     :root {
       --theme: #10263B;
@@ -222,7 +220,7 @@
 <body>
   <header>
     <h1>
-      <img src="public/ccc.webp" alt="CCC Logo" class="logo" loading="lazy" fetchpriority="high" width="100" height="100" />
+      <img src="ccc.webp" alt="CCC Logo" class="logo" loading="lazy" fetchpriority="high" width="100" height="100" />
       UNNC中国文化课签到二维码生成器
     </h1>
   </header>
@@ -299,12 +297,6 @@
         })
       );
 
-      const extractScheduleId = (url) => {
-        const m1 = url.match(/[?&]id=([^&#]+)/);
-        const m2 = url.match(/[?&]scheduleId=([^&#]+)/);
-        return m1 ? m1[1] : (m2 ? m2[1] : null);
-      };
-
       const getTimestamp = (mode) => {
         if (mode === 'auto') {
           return Date.now() + 60 * 1000;
@@ -322,30 +314,20 @@
         }
       };
 
-      const downloadCanvas = (canvas, filename) => {
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.getElementById('dlLink');
-          a.href = url;
-          a.download = filename;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }, 'image/png');
+      const downloadImage = (imgSrc, filename) => {
+        const a = document.getElementById('dlLink');
+        a.href = imgSrc;
+        a.download = filename;
+        a.click();
       };
 
-      document.getElementById('genBtn').addEventListener('click', () => {
+      document.getElementById('genBtn').addEventListener('click', async () => {
         const urlInput = document.getElementById('urlInput');
         const url = urlInput.value.trim();
         
         if (!url) {
           alert('请先粘贴链接');
           urlInput.focus();
-          return;
-        }
-
-        const sid = extractScheduleId(url);
-        if (!sid) {
-          alert('无法提取 scheduleId，请检查链接是否包含 id= 或 scheduleId=');
           return;
         }
 
@@ -357,27 +339,43 @@
           return alert('手动时间格式错误（月1-12，日1-31，时0-23）');
         }
 
-        const attendanceUrl = `https://ccc.nottingham.edu.cn/study/attendance?scheduleId=${sid}&time=${ts}`;
         const qrcodeContainer = document.getElementById('qrcode');
-        qrcodeContainer.innerHTML = '';
-        
+        qrcodeContainer.innerHTML = '<p>正在生成...</p>';
+
         try {
-          new QRCode(qrcodeContainer, {
-            text: attendanceUrl,
-            width: 320,
-            height: 320,
-            colorDark: "#ffffff",
-            colorLight: "#10263B",
-            correctLevel: QRCode.CorrectLevel.L
+          const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, timestamp: ts })
           });
 
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || '生成失败');
+          }
+
+          const qrBase64 = data.qrCodeBase64;
+          qrcodeContainer.innerHTML = '';
+          
+          const img = new Image();
+          img.src = qrBase64;
+          img.alt = "Attendance QR Code";
+          img.style.maxWidth = "100%";
+          img.style.height = "auto";
+          qrcodeContainer.appendChild(img);
+
+          // Auto download after a short delay
           setTimeout(() => {
-            const canvas = qrcodeContainer.querySelector('canvas');
-            if (canvas) downloadCanvas(canvas, 'qrcode.png');
-          }, 100);
+            downloadImage(qrBase64, 'qrcode.png');
+          }, 500);
+
         } catch (e) {
           console.error('QR Code generation failed:', e);
-          alert('二维码生成失败，请检查网络或刷新页面');
+          qrcodeContainer.innerHTML = ''; // Clear "generating..." text
+          alert('二维码生成失败：' + e.message);
         }
       });
     });
