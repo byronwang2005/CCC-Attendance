@@ -2,7 +2,7 @@
 
 <img src="public/ccc.webp" alt="CCC" width="380" />
 
-> 收藏不迷路：[**ccc.byron.wang**](https://ccc.byron.wang)
+> 收藏不迷路：[**https://ccc.byron.wang**](https://ccc.byron.wang)
 
 ---
 
@@ -21,38 +21,14 @@
 
 - 根据大量经验：*e.g.若日历下课时间为`20:00`，则最佳**签到时间窗口为`19:50-20:00`***
 
-### 方法一（网页端，全平台可用）
-
-1. **前往 [网页端](https://ccc.byron.wang)**  
+1. **前往 [https://ccc.byron.wang](https://ccc.byron.wang)**  
 
 2. 按照网页指引操作：
    - 粘贴课程链接（[获取方法](https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator?tab=readme-ov-file#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E8%AF%BE%E7%A8%8B%E9%93%BE%E6%8E%A5)）
-   - 选择 **自动模式**（推荐）
+   - 时间模式选择 **自动**（推荐）
    - 用 **手机微信** 扫描生成的二维码即可签到！
 
 二维码会自动下载！
-
-### 方法二（桌面端）
-
-> 仅在指定版本提供
-
-1. **前往 [v3.5.4 的 Releases 页面](https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator/releases/tag/v3.5.4)**  
-
-2. 根据你的电脑系统，下载对应文件：
-   - **Windows 用户** → 下载 `CCC_Attendance.exe`
-   - **Mac 用户** → 下载 `CCC_Attendance.dmg`
-
-3. 对于**Mac 用户**：
-   - 双击 `CCC Attendance.dmg`
-   - 再双击运行 `CCC Attendance.app`（首次打开若提示“无法验证开发者”，请右键 → “打开”）
-   - 若您想长期使用本软件，请将 `CCC Attendance.app` 拖入 `Applications`或`应用程序` 文件夹
-
-4. 按照程序内指引操作：
-   - 粘贴课程链接（[获取方法](https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator?tab=readme-ov-file#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E8%AF%BE%E7%A8%8B%E9%93%BE%E6%8E%A5)）
-   - 选择 **自动模式**（推荐）
-   - 用 **手机微信** 扫描生成的二维码即可签到！
-
-二维码会自动保存为 `qrcode.png`（在程序同目录下）！
 
 ---
 
@@ -65,7 +41,6 @@
 > 请勿修改链接，直接粘贴到程序中即可。
 4. 链接格式应为：  
    `https://ccc.nottingham.edu.cn/study/home/details?id=xxxx`
-
 
 ---
 
