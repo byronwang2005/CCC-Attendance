@@ -1,4 +1,4 @@
-# Agent Guide for CCC Attendance QRcode Generator
+# Agent Guide for CCC Attendance
 
 本指南帮助 AI Agent 有效地指导用户使用本项目。
 
@@ -212,6 +212,6 @@ curl -X POST https://ccc.byron.wang/api/generate `
 
 ## 更多信息
 
-- 项目主页：https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator
+- 项目主页：https://github.com/byronwang2005/CCC-Attendance
 - 在线工具：https://ccc.byron.wang
 - 许可证：MIT License

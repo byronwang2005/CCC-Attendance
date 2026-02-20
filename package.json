@@ -1,5 +1,5 @@
 {
-  "name": "ccc-attendance-qrcode-generator",
+  "name": "ccc-attendance",
   "version": "1.0.0",
   "description": "UNNC中国文化课签到二维码生成器",
   "scripts": {

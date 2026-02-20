@@ -46,7 +46,7 @@
 1. **前往 [https://ccc.byron.wang](https://ccc.byron.wang)**  
 
 2. 按照网页指引操作：
-   - 粘贴课程链接（[获取方法](https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator?tab=readme-ov-file#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E8%AF%BE%E7%A8%8B%E9%93%BE%E6%8E%A5)）
+   - 粘贴课程链接（[获取方法](https://github.com/byronwang2005/CCC-Attendance?tab=readme-ov-file#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E8%AF%BE%E7%A8%8B%E9%93%BE%E6%8E%A5)）
    - 时间模式选择 **自动**（推荐）
    - 用 **手机微信** 扫描生成的二维码即可签到！
 
@@ -84,4 +84,4 @@ A：请确认：
 ---
 
 **Made with ❤️ for UNNC students**  
-By Byron | [GitHub](https://github.com/byronwang2005/CCC-Attendance-QRcode-Generator)
+By Byron | [GitHub](https://github.com/byronwang2005/CCC-Attendance)
