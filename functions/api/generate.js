@@ -36,17 +36,14 @@ export async function onRequestPost(context) {
 
     const attendanceUrl = `https://ccc.nottingham.edu.cn/study/attendance?scheduleId=${sid}&time=${timestamp}`;
 
-    // Generate QR Code
+    // Generate QR Code as PNG
     const qrBuffer = qr.imageSync(attendanceUrl, { type: 'png', margin: 2, size: 10 });
-    const qrBase64 = `data:image/png;base64,${qrBuffer.toString('base64')}`;
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      url: attendanceUrl,
-      scheduleId: sid,
-      qrCodeBase64: qrBase64
-    }), {
-      headers: { 'Content-Type': 'application/json' }
+    return new Response(qrBuffer, {
+      headers: { 
+        'Content-Type': 'image/png',
+        'Content-Disposition': 'attachment; filename="qrcode.png"'
+      }
     });
 
   } catch (err) {

@@ -60,22 +60,17 @@
 ```bash
 curl -X POST https://ccc.byron.wang/api/generate \
   -H "Content-Type: application/json" \
-  -d '{"url":"用户提供的链接","timestamp":'$(date +%s)000'}'
+  -d '{"url":"用户提供的链接","timestamp":'$(date +%s)000'}' \
+  -o qrcode.png
 ```
 
 **响应格式**：
-```json
-{
-  "success": true,
-  "url": "https://ccc.nottingham.edu.cn/study/attendance?scheduleId=xxxx&time=xxxx",
-  "scheduleId": "xxxx",
-  "qrCodeBase64": "data:image/png;base64,..."
-}
-```
+- API 直接返回 PNG 图片（二进制数据）
+- 浏览器会自动触发下载，文件名为 `qrcode.png`
 
 **Agent 应该**：
-1. 根据 `qrCodeBase64` 字段生成为png图片，保存在用户本地并主动展示给用户
-2. 如果无法保存在本地，把 `qrCodeBase64` 字段转换为用户浏览器可打开的链接，告知用户可以直接在浏览器中打开查看
+1. 将返回的 PNG 图片保存为 `qrcode.png`
+2. 将图片主动展示给用户
 3. 提示用户使用手机微信扫描二维码
 
 ## 常见问题解答
@@ -192,7 +187,8 @@ curl -X POST https://ccc.byron.wang/api/generate \
 ```bash
 curl -X POST https://ccc.byron.wang/api/generate \
   -H "Content-Type: application/json" \
-  -d '{"url":"https://ccc.nottingham.edu.cn/study/home/details?id=12345","timestamp":'$(date +%s)000'}'
+  -d '{"url":"https://ccc.nottingham.edu.cn/study/home/details?id=12345","timestamp":'$(date +%s)000'}' \
+  -o qrcode.png
 ```
 
 ### curl (Windows PowerShell)
@@ -200,7 +196,8 @@ curl -X POST https://ccc.byron.wang/api/generate \
 $timestamp = [int64](Get-Date -UFormat %s) * 1000
 curl -X POST https://ccc.byron.wang/api/generate `
   -H "Content-Type: application/json" `
-  -d "{""url"":""https://ccc.nottingham.edu.cn/study/home/details?id=12345"",""timestamp"":$timestamp}"
+  -d "{""url"":""https://ccc.nottingham.edu.cn/study/home/details?id=12345"",""timestamp"":$timestamp}" `
+  -o qrcode.png
 ```
 
 

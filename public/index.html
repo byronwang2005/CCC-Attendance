@@ -773,25 +773,27 @@
             body: JSON.stringify({ url, timestamp: ts })
           });
 
-          const data = await response.json();
-
           if (!response.ok) {
-            throw new Error(data.error || '生成失败');
+            const errorText = await response.text();
+            throw new Error(errorText || '生成失败');
           }
 
-          const qrBase64 = data.qrCodeBase64;
+          const blob = await response.blob();
+          const imageUrl = URL.createObjectURL(blob);
+          
           qrcodeContainer.innerHTML = '';
           
           const img = new Image();
-          img.src = qrBase64;
+          img.src = imageUrl;
           img.alt = "Attendance QR Code";
           img.style.maxWidth = "100%";
           img.style.height = "auto";
           qrcodeContainer.appendChild(img);
 
           setTimeout(() => {
-            downloadImage(qrBase64, 'qrcode.png');
+            downloadImage(imageUrl, 'qrcode.png');
             showToast('二维码已生成并下载！温馨提示：如果有"答题"选项，请记得完成答题哦！');
+            URL.revokeObjectURL(imageUrl);
           }, 500);
 
         } catch (e) {
