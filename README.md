@@ -1,6 +1,6 @@
 # UNNC中国文化课签到二维码生成器
 
-<img src="public/ccc.webp" alt="CCC" width="380" />
+<img src="public/ccc.webp" alt="CCC" width="300" />
 
 > 收藏不迷路：[**https://ccc.byron.wang**](https://ccc.byron.wang)
 
