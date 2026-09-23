@@ -268,6 +268,10 @@ function BootLoader() {
           <span style={{ width: `${progress}%` }} />
         </div>
         <strong className="boot-loader__percent">{progress}%</strong>
+        <div className="boot-loader__hints">
+          <p className="boot-loader__hint boot-loader__hint--4">{TEXT.placeholders.bootSlow}</p>
+          <p className="boot-loader__hint boot-loader__hint--15">{TEXT.placeholders.bootStalled}</p>
+        </div>
       </div>
     </section>
   );

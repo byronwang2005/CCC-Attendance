@@ -47,7 +47,9 @@ export const TEXT = {
   placeholders: {
     qrCode: '二维码将在这里生成',
     qrCodeLoading: '正在生成二维码...',
-    receiptLoading: '正在准备'
+    receiptLoading: '正在准备',
+    bootSlow: '受网络环境影响，加载时间可能稍长，这是正常情况，请耐心等待。',
+    bootStalled: '若长时间无响应，请尝试科学上网或连接eduroam。'
   },
   redirects: {
     finishFirstStep: '请先完成第一步并粘贴课程链接',
@@ -100,6 +102,8 @@ export const COPY_LOCK = [
   '云天收夏色，木叶动秋声。',
   '轻点大树获取二维码',
   '正在准备',
+  '受网络环境影响，加载时间可能稍长，这是正常情况，请耐心等待。',
+  '若长时间无响应，请尝试科学上网或连接eduroam。',
   '生成时间',
   '模式',
   '身份',

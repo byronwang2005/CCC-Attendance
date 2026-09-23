@@ -25,6 +25,8 @@
   <meta name="google-adsense-account" content="ca-pub-6554215833101483">
   <script>
     document.documentElement.classList.replace('no-js', 'js');
+    window.setTimeout(() => document.documentElement.classList.add('boot-wait-4'), 4000);
+    window.setTimeout(() => document.documentElement.classList.add('boot-wait-15'), 15000);
   </script>
   <link rel="canonical" href="https://ccc.byron.wang/" />
   <link rel="alternate" type="text/markdown" href="https://ccc.byron.wang/llms.txt" title="CCC Attendance AI overview" />
@@ -131,6 +133,10 @@
           <span data-boot-progress-bar></span>
         </div>
         <strong class="boot-loader__percent" data-boot-progress-text>0%</strong>
+        <div class="boot-loader__hints">
+          <p class="boot-loader__hint boot-loader__hint--4">受网络环境影响，加载时间可能稍长，这是正常情况，请耐心等待。</p>
+          <p class="boot-loader__hint boot-loader__hint--15">若长时间无响应，请尝试科学上网或连接eduroam。</p>
+        </div>
       </div>
     </section>
     <article class="seo-content" aria-labelledby="seo-title">
