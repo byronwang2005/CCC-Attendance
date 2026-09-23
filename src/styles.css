@@ -3452,3 +3452,65 @@ input[type="number"] {
 .magic-tree-stage__error { padding: 24px; font-size: 13px; text-align: center; z-index: 1; }
 
 .magic-tree-stage__error button { padding: 9px 16px; border: 1px solid #dfd3bc; border-radius: 20px; background: transparent; color: inherit; cursor: pointer; }
+
+/* Stateful icons keep the existing icon metrics without shifting their controls. */
+.masthead__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.masthead__step-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.choice-card {
+  position: relative;
+}
+
+.choice-card input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.choice-card > .morph-icon {
+  flex: 0 0 18px;
+  margin-top: 2px;
+}
+
+.choice-card > span {
+  min-width: 0;
+}
+
+.qr-status-mark {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgb(255 255 255 / 66%);
+  border-radius: 12px;
+  background: rgb(250 248 241 / 78%);
+  color: var(--brand);
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .choice-card {
+    gap: 8px;
+  }
+
+  .qr-status-mark {
+    top: 8px;
+    left: 8px;
+    width: 30px;
+    height: 30px;
+  }
+}

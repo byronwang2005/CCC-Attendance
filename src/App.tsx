@@ -12,6 +12,19 @@ import {
   useState
 } from 'react';
 import { flushSync } from 'react-dom';
+import {
+  Bot,
+  CalendarClock,
+  Check,
+  CircleAlert,
+  CircleCheck,
+  Clock,
+  Copy,
+  Link,
+  QrCode,
+  ScanLine,
+  User
+} from 'lucide';
 import { AGENT_PROMPT, APP_PATHS, TEXT, TIME_LIMITS } from './config';
 import { InkFlowBackground } from './features/background/InkFlowBackground';
 import { INK_PALETTES, type InkStep } from './features/background/ink-flow-config';
@@ -22,6 +35,7 @@ import {
   useGlassCapabilities
 } from './features/glass/GlassIsland';
 import { SegmentedGlassControl } from './features/glass/SegmentedGlassControl';
+import { MorphingIcon } from './features/icons/MorphingIcon';
 import { useExpandableSections } from './lib/use-expandable-sections';
 import {
   buildTimestamp,
@@ -76,11 +90,7 @@ type StatePatch = Partial<Omit<WizardState, 'manualTime'>> & { manualTime?: Part
 type IconName =
   | 'arrow-left'
   | 'arrow-right'
-  | 'bot'
-  | 'check'
-  | 'copy'
   | 'rotate-ccw'
-  | 'user'
   | 'x';
 
 function Icon({ name, className = '' }: { name: IconName; className?: string }) {
@@ -457,7 +467,14 @@ function PageShell({
               <img src="/assets/images/ccc-small.webp" className="masthead__logo" alt="CCC" />
               <div className="masthead__copy">
                 <h1 className="masthead__title">CCC Attendance</h1>
-                <p className="masthead__summary">一个签到码，三步搞定</p>
+                <p className="masthead__summary">
+                  <MorphingIcon
+                    icon={currentStep === 1 ? Link : currentStep === 2 ? Clock : QrCode}
+                    className="masthead__step-icon"
+                    size={14}
+                  />
+                  <span>一个签到码，三步搞定</span>
+                </p>
               </div>
             </header>
           </StaticGlassIsland>
@@ -540,7 +557,11 @@ function IdentityStep({
               aria-pressed={state.identity === 'human'}
               onClick={() => selectIdentity('human')}
             >
-              <Icon name="user" />
+              <MorphingIcon
+                icon={state.identity === 'human' ? CircleCheck : User}
+                size={19}
+                strokeWidth={1.65}
+              />
               <span>人类</span>
             </button>
             <button
@@ -549,7 +570,11 @@ function IdentityStep({
               aria-pressed={state.identity === 'agent'}
               onClick={() => selectIdentity('agent')}
             >
-              <Icon name="bot" />
+              <MorphingIcon
+                icon={state.identity === 'agent' ? CircleCheck : Bot}
+                size={19}
+                strokeWidth={1.65}
+              />
               <span>智能体</span>
             </button>
           </SegmentedGlassControl>
@@ -622,7 +647,7 @@ function IdentityStep({
                 className="action-island compact-action-island copy-action-island"
               >
                 <button type="button" className="copy-btn" disabled={copied} onClick={copyAgentPrompt}>
-                  <Icon name={copied ? 'check' : 'copy'} />
+                  <MorphingIcon icon={copied ? Check : Copy} />
                   <span>{copied ? '已复制!' : '复制'}</span>
                 </button>
               </GlassIsland>
@@ -895,6 +920,7 @@ function ChoiceCard({
     <div className="choice-island">
     <label className={`choice-card ${selected ? 'is-selected' : ''}`}>
       <input type="radio" name="mode" value={value} checked={selected} onChange={() => onSelect(value)} />
+      <MorphingIcon icon={selected ? CircleCheck : value === 'auto' ? Clock : CalendarClock} />
       <span>{children}</span>
     </label>
     </div>
@@ -968,6 +994,9 @@ function QrcodeStep({
       <section className="receipt-panel panel">
         <div className={`receipt-result-layout${result.imageUrl ? ' is-ready' : ' is-pending'}`}>
           <div id="qrcode" className="qrcode-stage" aria-label="二维码，就位">
+            <div className="qr-status-mark" aria-hidden="true">
+              <MorphingIcon icon={result.message ? CircleAlert : result.imageUrl ? CircleCheck : ScanLine} />
+            </div>
             {result.imageUrl && validation.valid ? (
               <Suspense fallback={<div className="qrcode-placeholder">{TEXT.placeholders.receiptLoading}</div>}>
                 <MagicTreeStage imageUrl={result.imageUrl} />

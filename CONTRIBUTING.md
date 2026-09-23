@@ -46,6 +46,19 @@ npm run preview
 - UI 改动需要检查 3 个步骤、移动端、性能、无障碍和 `prefers-reduced-motion`。
 - 带有 `Generated` 标记或由 `scripts/` 输出的文件不得手动编辑；应修改源文件并重新运行对应脚本。
 
+## Icons and Motion
+
+- 只有同一控件或状态标记的图标会随状态变化时，才使用 `src/features/icons/MorphingIcon.tsx`；将 `lucide` 包导出的图标数据传给 `icon`，不要传入 `lucide-react` 组件，也不要为每个状态更换组件的 `key`。保持同一图标节点挂载，形变才能连续播放。
+- 形变图标沿用现有图标的尺寸、线宽和 `currentColor`，并统一遵循 `prefers-reduced-motion`。图标仅作视觉反馈，按钮文字、选中状态和错误提示仍需独立表达操作含义。
+- 不变的返回、关闭等图标继续使用构建期 SVG sprite。新增静态图标时修改 `scripts/build-icon-sprite.mjs` 并运行 `npm run icons:build`，不要手改 `public/assets/icons/actions.svg`。保持 `lucide` 与 `lucide-static` 版本一致。
+- 改动图标交互时，验证状态来回切换、图标节点未重挂载，以及移动端和减少动态效果下的表现。
+
+## Frontend Copy and Font Subsets
+
+- 修改或新增前端文案后，运行 `python3 scripts/build-font-subsets.py` 补齐字体子集；该脚本需要本机可用的 `pyftsubset`。它会从 `index.html`、`README.md` 及 `src/`、`functions/`、`public/` 中收集字符，生成 `public/assets/fonts/` 下的两份中文 WOFF2，并更新 `functions/lib/qr-stats-fonts.js`。若新文案位于这些范围之外，先把对应源文件加入脚本的字符收集范围。
+- 将实际变化的生成文件一并提交；若 WOFF2 内容变化，同时更新 `src/styles.css` 和 `src/404.css` 中字体 URL 的版本参数，避免浏览器继续使用旧字体。检查页面新增字符是否正确显示，且未意外回退到系统字体。
+- 如果改动了受 `src/config.ts` 的 `COPY_LOCK` 保护的文案，同步审查该清单和 `src/copy-lock.test.ts`；只有在文案确已批准变更时才更新测试摘要。
+
 ## Commit Style (Use English)
 
 - `feat: ...`：新功能。

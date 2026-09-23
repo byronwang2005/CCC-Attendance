@@ -41,6 +41,12 @@ const validWizardState = {
   timeMode: 'auto'
 };
 
+const morphPath = (root: Element | null) => {
+  const path = root?.querySelector<SVGPathElement>('svg.morph-icon path');
+  expect(path).toBeInTheDocument();
+  return path!;
+};
+
 describe('CCC Attendance first step', () => {
   afterEach(() => {
     cleanup();
@@ -745,6 +751,116 @@ describe('CCC Attendance first step', () => {
     expect(document.getElementById('date')).not.toBeVisible();
     expect(scrollTo).not.toHaveBeenCalled();
     expect(panel.scrollTop).toBe(24);
+  });
+
+  it('morphs identity icons and copy feedback in place', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
+
+    const human = screen.getByRole('button', { name: '人类' });
+    const agent = screen.getByRole('button', { name: '智能体' });
+    const humanPath = morphPath(human);
+    const agentPath = morphPath(agent);
+    const initialHuman = humanPath.getAttribute('d');
+    const initialAgent = agentPath.getAttribute('d');
+
+    await user.click(human);
+    await waitFor(() => expect(humanPath.getAttribute('d')).not.toBe(initialHuman));
+    expect(morphPath(human)).toBe(humanPath);
+    await user.click(agent);
+    await waitFor(() => expect(humanPath.getAttribute('d')).toBe(initialHuman));
+    expect(agentPath.getAttribute('d')).not.toBe(initialAgent);
+
+    const copyButton = screen.getByRole('button', { name: '复制' });
+    const copyPath = morphPath(copyButton);
+    const initialCopy = copyPath.getAttribute('d');
+    await user.click(copyButton);
+    expect(screen.getByRole('button', { name: '已复制!' })).toBeDisabled();
+    await waitFor(() => expect(copyPath.getAttribute('d')).not.toBe(initialCopy));
+    expect(morphPath(screen.getByRole('button', { name: '已复制!' }))).toBe(copyPath);
+    await waitFor(() => expect(copyPath.getAttribute('d')).toBe(initialCopy), { timeout: 2500 });
+    expect(screen.getByRole('button', { name: '复制' })).toBeEnabled();
+  });
+
+  it('morphs time-mode icons while keeping the native radios usable', async () => {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
+    window.history.replaceState({}, '', '/index.html?step=2');
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
+
+    const auto = screen.getByRole('radio', { name: /^自动/ });
+    const manual = screen.getByRole('radio', { name: /^手动/ });
+    const autoPath = morphPath(auto.closest('label'));
+    const manualPath = morphPath(manual.closest('label'));
+    const initialAuto = autoPath.getAttribute('d');
+    const initialManual = manualPath.getAttribute('d');
+
+    await user.click(manual);
+    expect(manual).toBeChecked();
+    await waitFor(() => expect(manualPath.getAttribute('d')).not.toBe(initialManual));
+    expect(autoPath.getAttribute('d')).not.toBe(initialAuto);
+    await user.click(auto);
+    expect(auto).toBeChecked();
+    await waitFor(() => expect(autoPath.getAttribute('d')).toBe(initialAuto));
+    expect(manualPath.getAttribute('d')).toBe(initialManual);
+    expect(morphPath(auto.closest('label'))).toBe(autoPath);
+    expect(morphPath(manual.closest('label'))).toBe(manualPath);
+
+    manual.focus();
+    expect(manual).toHaveFocus();
+    await user.keyboard(' ');
+    expect(manual).toBeChecked();
+  });
+
+  it('keeps one step icon mounted through forward and backward navigation', async () => {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
+
+    const stepPath = morphPath(document.querySelector('.masthead__summary'));
+    const firstStep = stepPath.getAttribute('d');
+    await user.click(screen.getByRole('button', { name: '下一步' }));
+    expect(await screen.findByRole('heading', { name: '再选择时间模式' })).toBeVisible();
+    await waitFor(() => expect(stepPath.getAttribute('d')).not.toBe(firstStep));
+    const secondStep = stepPath.getAttribute('d');
+    await user.click(screen.getByRole('button', { name: '下一步' }));
+    expect(await screen.findByRole('button', { name: '生成更多' })).toBeVisible();
+    await waitFor(() => expect(stepPath.getAttribute('d')).not.toBe(secondStep));
+    await user.click(screen.getByRole('button', { name: '返回上一步' }));
+    await waitFor(() => expect(stepPath.getAttribute('d')).toBe(secondStep));
+    expect(morphPath(document.querySelector('.masthead__summary'))).toBe(stepPath);
+  });
+
+  it.each(['success', 'error'] as const)('morphs QR status from pending to %s', async (outcome) => {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
+    window.history.replaceState({}, '', '/index.html?step=3');
+    let finishFetch: (response: Response) => void = () => {};
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise((resolve) => {
+      finishFetch = resolve;
+    }));
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-qr');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    render(<App />);
+
+    expect(await screen.findByRole('button', { name: '生成更多' }, { timeout: 2000 })).toBeVisible();
+    const statusPath = morphPath(document.querySelector('.qr-status-mark'));
+    const pending = statusPath.getAttribute('d');
+    await act(async () => {
+      finishFetch(outcome === 'success'
+        ? new Response(new Blob(['qr']), { status: 200 })
+        : new Response('generation failed', { status: 500 }));
+    });
+    await waitFor(() => expect(statusPath.getAttribute('d')).not.toBe(pending));
+    expect(morphPath(document.querySelector('.qr-status-mark'))).toBe(statusPath);
+    if (outcome === 'success') {
+      expect(screen.getByText(TEXT.status.qrCodeReady)).toBeVisible();
+    } else {
+      expect(screen.getByRole('alertdialog')).toHaveTextContent('二维码生成失败');
+    }
   });
 
   it.each([1, 2, 3])('does not render step artwork on step %i', async (step) => {
