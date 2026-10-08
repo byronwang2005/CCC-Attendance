@@ -51,29 +51,10 @@ describe('NotFoundPage', () => {
     expect(screen.queryByText(/MIT License/)).not.toBeInTheDocument();
   });
 
-  it('uses a native backdrop panel and a true refractive action on desktop Chromium', async () => {
-    mockEnvironment(CHROME_DESKTOP);
-    render(<NotFoundPage />);
-
-    const glassSurfaces = await screen.findAllByTestId('liquid-glass');
-    expect(glassSurfaces).toHaveLength(1);
-    const action = screen.getByRole('link', { name: '返回首页' }).closest<HTMLElement>('[data-glass-material]');
-    const panel = screen.getByRole('heading', { name: '这个页面没有找到' }).closest<HTMLElement>('[data-glass-material]');
-    const panelSurface = panel?.querySelector<HTMLElement>('[data-glass-surface="refractive"]');
-    expect(action).toHaveAttribute('data-glass-material', 'refractive');
-    expect(panel).toHaveAttribute('data-glass-material', 'refractive');
-    expect(panel).toHaveClass('static-glass-island', 'glass-island--content');
-    expect(panelSurface).toBeInTheDocument();
-    expect(panelSurface).toHaveAttribute('data-glass-engine', 'native');
-    expect(panelSurface).not.toContainElement(action);
-    expect(action?.parentElement?.closest('[data-glass-surface]')).toBeNull();
-  });
-
-  it('keeps the pearl fallback on Safari', () => {
+  it('keeps the information standard and the action usable without a background producer', () => {
     mockEnvironment(SAFARI_DESKTOP);
-    const { container } = render(<NotFoundPage />);
-
-    expect(container.querySelectorAll('[data-glass-material="pearl"]')).toHaveLength(2);
-    expect(screen.queryByTestId('liquid-glass')).not.toBeInTheDocument();
+    render(<NotFoundPage />);
+    expect(screen.getByRole('heading', { name: '这个页面没有找到' }).closest('[data-glass-material]')).toHaveAttribute('data-glass-material', 'standard');
+    expect(screen.getByRole('link', { name: '返回首页' }).closest('[data-glass-renderer]')).toHaveAttribute('data-glass-renderer', 'backdrop');
   });
 });

@@ -104,7 +104,7 @@ describe('CCC Attendance first step', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
 
     const input = screen.getByRole('textbox', { name: '课程详情链接输入框' });
     await user.type(input, 'https://ccc.nottingham.edu.cn/study/home/details?id=1234');
@@ -118,7 +118,7 @@ describe('CCC Attendance first step', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     await user.type(
       screen.getByRole('textbox', { name: '课程详情链接输入框' }),
       'https://ccc.nottingham.edu.cn/study/home/details?id=1234'
@@ -139,7 +139,7 @@ describe('CCC Attendance first step', () => {
     const stage = document.querySelector<HTMLElement>('.app-stage');
     expect(stage?.style.getPropertyValue('--ink-stage-background')).toBe('#f0f3f4');
 
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     await user.type(
       screen.getByRole('textbox', { name: '课程详情链接输入框' }),
       'https://ccc.nottingham.edu.cn/study/home/details?id=1234'
@@ -262,7 +262,7 @@ describe('CCC Attendance first step', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     await user.type(
       screen.getByRole('textbox', { name: '课程详情链接输入框' }),
       validWizardState.url
@@ -313,7 +313,7 @@ describe('CCC Attendance first step', () => {
     window.history.replaceState({}, '', `/index.html?step=${step}`);
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: fallbackHeading }, { timeout: 2000 })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: fallbackHeading, hidden: true }, { timeout: 2000 })).toBeVisible();
     expect(screen.getByRole('alertdialog')).toHaveTextContent(message);
     expect(window.location.search).toBe(step === 3 && fallbackHeading === '再选择时间模式' ? '?step=2' : '?step=1');
   });
@@ -416,7 +416,7 @@ describe('CCC Attendance first step', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: '智能体' }));
+    await user.click(screen.getByRole('radio', { name: '智能体' }));
 
     const prompt = await screen.findByText(/Please read the instruction/);
     const hint = screen.getByText('把这句话交给智能体，它会引导您在本地完成后续步骤。');
@@ -430,12 +430,12 @@ describe('CCC Attendance first step', () => {
     expect(screen.getByRole('button', { name: '下一步' })).toBeDisabled();
   });
 
-  it('uses glass material for guide indexes, inline emphasis, and the course link input', async () => {
+  it('uses standard content surfaces and reserves glass for controls', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
 
     const guideNumbers = document.querySelectorAll('.guide-card > .step-number');
     const stepperNumbers = document.querySelectorAll('.step-card > .step-number');
@@ -456,19 +456,19 @@ describe('CCC Attendance first step', () => {
       document.querySelector('.agent-command-island')
     ]) {
       expect(island).not.toBeNull();
-      expect(island).toHaveClass('glass-island', 'glass-island--content', 'static-glass-island');
+      expect(island).toHaveAttribute('data-glass-material', 'standard');
       expect(island).not.toHaveClass('layered-glass-island');
-      expect(island?.querySelectorAll(':scope > .glass-surface-layer')).toHaveLength(1);
+      expect(island?.querySelector(':scope > .regular-glass-surface')).toBeNull();
     }
 
-    for (const selector of ['.masthead-island', '.stepper-island', '.task-glass']) {
-      expect(document.querySelector(selector)).toHaveClass('static-glass-island', 'glass-island--content');
+    for (const selector of ['.masthead-island', '.task-glass']) {
+      expect(document.querySelector(selector)).toHaveAttribute('data-glass-material', 'standard');
     }
-    expect(document.querySelectorAll('.segmented-glass__rail-surface.static-glass-surface')).toHaveLength(1);
-    expect(document.querySelectorAll('.stepper-active-indicator__surface')).toHaveLength(1);
+    expect(document.querySelector('.stepper-island')).toHaveAttribute('data-glass-material', 'regular');
+    expect(document.querySelector('.stepper-active-indicator .regular-glass-surface')).toBeNull();
   });
 
-  it('keeps an error toast mounted until its exit animation completes', async () => {
+  it('names the modal and returns focus after Escape', async () => {
     vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
       matches: false,
       media: query,
@@ -485,12 +485,12 @@ describe('CCC Attendance first step', () => {
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '跳转到第 2 步' }));
     const dialog = await screen.findByRole('alertdialog');
-    expect(dialog).not.toHaveClass('is-exiting');
+    expect(dialog).toHaveAccessibleName('提示');
+    expect(screen.getByRole('button', { name: '关闭提示' })).toHaveFocus();
 
-    await user.click(screen.getByRole('button', { name: '关闭提示' }));
-    expect(dialog).toHaveClass('is-exiting');
-    expect(dialog).toBeInTheDocument();
+    await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: '跳转到第 2 步' })).toHaveFocus();
   });
 
   it('keeps both identity sections mounted while switching their expandable state', async () => {
@@ -503,15 +503,15 @@ describe('CCC Attendance first step', () => {
     expect(humanGuide).not.toBeVisible();
     expect(agentPrompt).not.toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     expect(humanGuide).toBeVisible();
     expect(agentPrompt).not.toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: '智能体' }));
+    await user.click(screen.getByRole('radio', { name: '智能体' }));
     expect(humanGuide).not.toBeVisible();
     expect(agentPrompt).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     expect(humanGuide).toBeVisible();
     expect(agentPrompt).not.toBeVisible();
   });
@@ -552,9 +552,9 @@ describe('CCC Attendance first step', () => {
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: '人类' }));
+    await user.click(screen.getByRole('radio', { name: '人类' }));
     await waitFor(() => expect(pendingAnimations).toHaveLength(2));
-    await user.click(screen.getByRole('button', { name: '智能体' }));
+    await user.click(screen.getByRole('radio', { name: '智能体' }));
     await waitFor(() => expect(pendingAnimations).toHaveLength(4));
     expect(pendingAnimations[0].animation.cancel).toHaveBeenCalledOnce();
     expect(pendingAnimations[1].animation.cancel).toHaveBeenCalledOnce();
@@ -586,10 +586,10 @@ describe('CCC Attendance first step', () => {
     expect(dateSelect).toBeInstanceOf(HTMLSelectElement);
     expect(dateSelect).not.toBeVisible();
 
-    await user.click(screen.getByText('手动', { selector: 'strong' }));
+    await user.click(screen.getByRole('radio', { name: '手动' }));
     expect(dateSelect).toBeVisible();
 
-    await user.click(screen.getByText('自动（推荐）', { selector: 'strong' }));
+    await user.click(screen.getByRole('radio', { name: '自动（推荐）' }));
     expect(dateSelect).not.toBeVisible();
   });
 
@@ -699,7 +699,7 @@ describe('CCC Attendance first step', () => {
     panel.scrollTo = scrollTo;
 
     await act(async () => {
-      fireEvent.click(screen.getByText('手动', { selector: 'strong' }));
+      fireEvent.click(screen.getByRole('radio', { name: '手动' }));
       await Promise.resolve();
     });
     expect(animate).toHaveBeenCalledTimes(2);
@@ -742,12 +742,12 @@ describe('CCC Attendance first step', () => {
     const scrollTo = vi.fn();
     panel.scrollTo = scrollTo;
 
-    await user.click(screen.getByText('手动', { selector: 'strong' }));
+    await user.click(screen.getByRole('radio', { name: '手动' }));
     expect(document.getElementById('date')).toBeVisible();
     expect(scrollTo).not.toHaveBeenCalled();
     expect(panel.scrollTop).toBe(24);
 
-    await user.click(screen.getByText('自动（推荐）', { selector: 'strong' }));
+    await user.click(screen.getByRole('radio', { name: '自动（推荐）' }));
     expect(document.getElementById('date')).not.toBeVisible();
     expect(scrollTo).not.toHaveBeenCalled();
     expect(panel.scrollTop).toBe(24);
@@ -758,8 +758,8 @@ describe('CCC Attendance first step', () => {
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
-    const human = screen.getByRole('button', { name: '人类' });
-    const agent = screen.getByRole('button', { name: '智能体' });
+    const human = screen.getByRole('radio', { name: '人类' });
+    const agent = screen.getByRole('radio', { name: '智能体' });
     const humanPath = morphPath(human);
     const agentPath = morphPath(agent);
     const initialHuman = humanPath.getAttribute('d');
@@ -783,33 +783,20 @@ describe('CCC Attendance first step', () => {
     expect(screen.getByRole('button', { name: '复制' })).toBeEnabled();
   });
 
-  it('morphs time-mode icons while keeping the native radios usable', async () => {
+  it('keeps time mode labels short and its preserved explanation outside the rail', async () => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=2');
     const user = userEvent.setup();
     render(<App />);
-    expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
-
-    const auto = screen.getByRole('radio', { name: /^自动/ });
-    const manual = screen.getByRole('radio', { name: /^手动/ });
-    const autoPath = morphPath(auto.closest('label'));
-    const manualPath = morphPath(manual.closest('label'));
-    const initialAuto = autoPath.getAttribute('d');
-    const initialManual = manualPath.getAttribute('d');
-
+    await screen.findByRole('heading', { name: '再选择时间模式' });
+    const auto = screen.getByRole('radio', { name: '自动（推荐）' });
+    const manual = screen.getByRole('radio', { name: '手动' });
     await user.click(manual);
     expect(manual).toBeChecked();
-    await waitFor(() => expect(manualPath.getAttribute('d')).not.toBe(initialManual));
-    expect(autoPath.getAttribute('d')).not.toBe(initialAuto);
+    expect(document.querySelector('.time-mode-description')).toHaveTextContent('自定义签到时间，通常用于提前准备二维码。');
     await user.click(auto);
     expect(auto).toBeChecked();
-    await waitFor(() => expect(autoPath.getAttribute('d')).toBe(initialAuto));
-    expect(manualPath.getAttribute('d')).toBe(initialManual);
-    expect(morphPath(auto.closest('label'))).toBe(autoPath);
-    expect(morphPath(manual.closest('label'))).toBe(manualPath);
-
     manual.focus();
-    expect(manual).toHaveFocus();
     await user.keyboard(' ');
     expect(manual).toBeChecked();
   });

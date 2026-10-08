@@ -16,7 +16,6 @@ function MessageContent() {
       <GlassIsland
         variant="interactive"
         shape="capsule"
-        opticsPreset="action"
         className="action-island not-found-action-island"
       >
         <a href="/" className="home-action">

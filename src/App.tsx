@@ -1,3 +1,5 @@
+import * as Dialog from '@radix-ui/react-dialog';
+import { GlassGroup } from './features/glass/GlassGroup';
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -14,7 +16,6 @@ import {
 import { flushSync } from 'react-dom';
 import {
   Bot,
-  CalendarClock,
   Check,
   CircleAlert,
   CircleCheck,
@@ -30,9 +31,7 @@ import { InkFlowBackground } from './features/background/InkFlowBackground';
 import { INK_PALETTES, type InkStep } from './features/background/ink-flow-config';
 import {
   GlassIsland,
-  GlassSurfaceLayer,
-  StaticGlassIsland,
-  useGlassCapabilities
+  StaticGlassIsland
 } from './features/glass/GlassIsland';
 import { SegmentedGlassControl } from './features/glass/SegmentedGlassControl';
 import { MorphingIcon } from './features/icons/MorphingIcon';
@@ -73,7 +72,6 @@ const scheduleMagicTreeStagePreload = () => {
 
 const NAVIGATION_EVENT = 'ccc:navigate';
 const STEP_TRANSITION_DURATION = 520;
-const TOAST_EXIT_DURATION = 220;
 
 type StepDirection = 'forward' | 'backward';
 
@@ -327,7 +325,6 @@ function StepNumber({ value }: { value: number | string }) {
 }
 
 function Stepper({ currentStep, state: wizardState, onLocked }: StepperProps) {
-  const capabilities = useGlassCapabilities();
   const activate = (target: InkStep) => {
     if (target === currentStep) return;
     const access = getStepAccess(wizardState, target);
@@ -342,14 +339,10 @@ function Stepper({ currentStep, state: wizardState, onLocked }: StepperProps) {
   };
 
   return (
-    <StaticGlassIsland shape="panel" className="stepper-island">
+    <GlassIsland variant="navigation" shape="panel" className="stepper-island">
       <section className="stepper" aria-label="步骤进度" data-current-step={currentStep}>
         <div className="stepper-active-indicator" aria-hidden="true">
-          <GlassSurfaceLayer
-            material={capabilities.material}
-            opticsPreset="selectionLens"
-            className="stepper-active-indicator__surface"
-          />
+
         </div>
         {STEP_DATA.map((step) => {
           const state = step.number === currentStep ? 'active' : (step.number < currentStep ? 'done' : 'idle');
@@ -377,7 +370,7 @@ function Stepper({ currentStep, state: wizardState, onLocked }: StepperProps) {
           return <div key={step.number} className="step-card-slot">{card}</div>;
         })}
       </section>
-    </StaticGlassIsland>
+    </GlassIsland>
   );
 }
 
@@ -396,51 +389,28 @@ function Footer() {
 }
 
 function Toast({ toast, onClose }: { toast: ToastState | null; onClose: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const closeTimerRef = useRef<number>(0);
-  const [isClosing, setIsClosing] = useState(false);
-
-  useEffect(() => {
-    if (toast) closeRef.current?.focus();
-  }, [toast]);
-
-  useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
-
-  const requestClose = () => {
-    if (isClosing) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      onClose();
-      return;
-    }
-    setIsClosing(true);
-    closeTimerRef.current = window.setTimeout(onClose, TOAST_EXIT_DURATION);
-  };
-
+  const returnFocus = useRef<HTMLElement | null>(document.activeElement instanceof HTMLElement ? document.activeElement : null);
   if (!toast || toast.type === 'success') return null;
-  return (
-    <div className={`toast ${toast.type} show${isClosing ? ' is-exiting' : ''}`} role="alertdialog" aria-live="assertive" aria-modal="true" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) requestClose();
-    }}>
-      <StaticGlassIsland shape="panel" className="toast-island">
+  return <Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}>
+    <Dialog.Portal>
+      <Dialog.Overlay className={`toast ${toast.type} show`} />
+      <Dialog.Content className="toast-island" role="alertdialog"
+        onCloseAutoFocus={event => {
+          event.preventDefault();
+          const target = returnFocus.current;
+          if (target?.isConnected && target !== document.body && target.tabIndex >= 0 && !target.closest('[inert], [hidden]')) target.focus({ preventScroll: true });
+          else document.querySelector<HTMLElement>('[aria-current="step"]')?.focus({ preventScroll: true });
+        }}>
         <div className="toast__window">
           <div className="toast__header">
-            <div className="toast__label">提示</div>
-            <GlassIsland
-              variant="interactive"
-              shape="capsule"
-              opticsPreset="close"
-              className="micro-action-island toast-close-island"
-            >
-              <button ref={closeRef} type="button" className="toast__close" aria-label="关闭提示" onClick={requestClose}>
-                <Icon name="x" />
-              </button>
-            </GlassIsland>
+            <Dialog.Title className="toast__label">提示</Dialog.Title>
+            <Dialog.Close className="toast__close" aria-label="关闭提示"><Icon name="x" /></Dialog.Close>
           </div>
-          <div className="toast__message">{toast.message}</div>
+          <Dialog.Description className="toast__message">{toast.message}</Dialog.Description>
         </div>
-      </StaticGlassIsland>
-    </div>
-  );
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>;
 }
 
 function PageShell({
@@ -500,6 +470,9 @@ function IdentityStep({
   showToast: (message: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const copyReset = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(copyReset.current), []);
   const inputRef = useRef<HTMLInputElement>(null);
   const humanContentRef = useRef<HTMLDivElement>(null);
   const agentContentRef = useRef<HTMLDivElement>(null);
@@ -512,12 +485,16 @@ function IdentityStep({
 
   const selectIdentity = (identity: Identity) => update({ identity });
   const copyAgentPrompt = async () => {
+    if (copying || copied) return;
+    setCopying(true);
     try {
       await navigator.clipboard.writeText(AGENT_PROMPT);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
+      copyReset.current = window.setTimeout(() => setCopied(false), 1800);
     } catch {
       showToast(TEXT.errors.copyFailed);
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -545,39 +522,12 @@ function IdentityStep({
         <div className="identity-header">
           <h3>先告诉我，您是</h3>
           <SegmentedGlassControl
-            selectedIndex={state.identity === 'human' ? 0 : state.identity === 'agent' ? 1 : -1}
-            count={2}
-            className="identity-buttons"
-            role="group"
-            ariaLabel="身份选择"
-          >
-            <button
-              type="button"
-              className={`identity-btn ${state.identity === 'human' ? 'active' : ''}`}
-              aria-pressed={state.identity === 'human'}
-              onClick={() => selectIdentity('human')}
-            >
-              <MorphingIcon
-                icon={state.identity === 'human' ? CircleCheck : User}
-                size={19}
-                strokeWidth={1.65}
-              />
-              <span>人类</span>
-            </button>
-            <button
-              type="button"
-              className={`identity-btn ${state.identity === 'agent' ? 'active' : ''}`}
-              aria-pressed={state.identity === 'agent'}
-              onClick={() => selectIdentity('agent')}
-            >
-              <MorphingIcon
-                icon={state.identity === 'agent' ? CircleCheck : Bot}
-                size={19}
-                strokeWidth={1.65}
-              />
-              <span>智能体</span>
-            </button>
-          </SegmentedGlassControl>
+            value={state.identity} onValueChange={selectIdentity} className="identity-buttons" ariaLabel="身份选择"
+            options={[
+              { value: 'human', label: '人类', icon: <MorphingIcon icon={state.identity === 'human' ? CircleCheck : User} size={19} strokeWidth={1.65} /> },
+              { value: 'agent', label: '智能体', icon: <MorphingIcon icon={state.identity === 'agent' ? CircleCheck : Bot} size={19} strokeWidth={1.65} /> }
+            ]}
+          />
         </div>
 
         <div
@@ -604,6 +554,7 @@ function IdentityStep({
                 <StaticGlassIsland
                   shape="panel"
                   className="embedded-static-glass course-link-input-island"
+                  onClick={() => inputRef.current?.focus()}
                 >
                   <div className="course-link-input-wrap">
                     <input
@@ -642,13 +593,12 @@ function IdentityStep({
               <GlassIsland
                 variant="interactive"
                 shape="capsule"
-                disabled={copied}
-                opticsPreset="action"
+                disabled={copied || copying}
                 className="action-island compact-action-island copy-action-island"
               >
-                <button type="button" className="copy-btn" disabled={copied} onClick={copyAgentPrompt}>
+                <button type="button" className="copy-btn" aria-busy={copying} disabled={copied || copying} onClick={copyAgentPrompt}>
                   <MorphingIcon icon={copied ? Check : Copy} />
-                  <span>{copied ? '已复制!' : '复制'}</span>
+                  <span aria-live="polite">{copying ? '复制中…' : copied ? '已复制!' : '复制'}</span>
                 </button>
               </GlassIsland>
             </div>
@@ -656,12 +606,11 @@ function IdentityStep({
         </div>
       </section>
       </StaticGlassIsland>
-      <div className="actions actions-major">
+      <GlassGroup className="actions actions-major">
         <GlassIsland
           variant="interactive"
           shape="capsule"
           disabled={state.identity !== 'human' || !state.url.trim()}
-          opticsPreset="action"
           className="action-island"
         >
         <button
@@ -675,7 +624,7 @@ function IdentityStep({
           <Icon name="arrow-right" />
         </button>
         </GlassIsland>
-      </div>
+      </GlassGroup>
     </>
   );
 }
@@ -834,21 +783,12 @@ function TimeStep({
           <p className="panel-current-time">当前时间 {formatCurrentTime(now)}</p>
         </div>
         <SegmentedGlassControl
-          selectedIndex={state.timeMode === 'manual' ? 1 : 0}
-          count={2}
-          className="radio-grid"
-          role="radiogroup"
-          ariaLabel="时间模式选择"
-        >
-          <ChoiceCard selected={state.timeMode === 'auto'} value="auto" onSelect={setMode}>
-            <strong>自动（推荐）</strong>
-            <small>适合绝大多数情况。</small>
-          </ChoiceCard>
-          <ChoiceCard selected={state.timeMode === 'manual'} value="manual" onSelect={setMode}>
-            <strong>手动</strong>
-            <small>自定义签到时间，通常用于提前准备二维码。</small>
-          </ChoiceCard>
-        </SegmentedGlassControl>
+          value={state.timeMode} onValueChange={setMode} className="radio-grid" ariaLabel="时间模式选择"
+          options={[{ value: 'auto', label: '自动（推荐）' }, { value: 'manual', label: '手动' }]}
+        />
+        <p className="time-mode-description" aria-live="polite">
+          {state.timeMode === 'auto' ? '适合绝大多数情况。' : '自定义签到时间，通常用于提前准备二维码。'}
+        </p>
         <div
           ref={manualTimeRef}
           id="manualTime"
@@ -878,8 +818,8 @@ function TimeStep({
         </div>
       </section>
       </StaticGlassIsland>
-      <div className="actions">
-        <GlassIsland variant="interactive" shape="capsule" opticsPreset="action" className="action-island">
+      <GlassGroup className="actions">
+        <GlassIsland variant="interactive" shape="capsule" className="action-island">
         <button type="button" className="button-secondary" onClick={() => {
           persistState(state);
           navigate(APP_PATHS.index);
@@ -888,7 +828,7 @@ function TimeStep({
           <span>返回上一步</span>
         </button>
         </GlassIsland>
-        <GlassIsland variant="interactive" shape="capsule" opticsPreset="action" className="action-island">
+        <GlassIsland variant="interactive" shape="capsule" className="action-island">
         <button
           type="button"
           className="button-primary"
@@ -900,30 +840,8 @@ function TimeStep({
           <Icon name="arrow-right" />
         </button>
         </GlassIsland>
-      </div>
+      </GlassGroup>
     </>
-  );
-}
-
-function ChoiceCard({
-  selected,
-  value,
-  onSelect,
-  children
-}: {
-  selected: boolean;
-  value: TimeMode;
-  onSelect: (value: TimeMode) => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="choice-island">
-    <label className={`choice-card ${selected ? 'is-selected' : ''}`}>
-      <input type="radio" name="mode" value={value} checked={selected} onChange={() => onSelect(value)} />
-      <MorphingIcon icon={selected ? CircleCheck : value === 'auto' ? Clock : CalendarClock} />
-      <span>{children}</span>
-    </label>
-    </div>
   );
 }
 
@@ -1027,20 +945,20 @@ function QrcodeStep({
         </div>
       </section>
       </StaticGlassIsland>
-      <div className="actions">
-        <GlassIsland variant="interactive" shape="capsule" opticsPreset="action" className="action-island">
+      <GlassGroup className="actions">
+        <GlassIsland variant="interactive" shape="capsule" className="action-island">
         <button type="button" className="button-secondary" onClick={() => navigate(APP_PATHS.time)}>
           <Icon name="arrow-left" />
           <span>返回上一步</span>
         </button>
         </GlassIsland>
-        <GlassIsland variant="interactive" shape="capsule" opticsPreset="action" className="action-island">
+        <GlassIsland variant="interactive" shape="capsule" className="action-island">
         <button type="button" className="button-secondary" onClick={startOver}>
           <Icon name="rotate-ccw" />
           <span>生成更多</span>
         </button>
         </GlassIsland>
-      </div>
+      </GlassGroup>
     </>
   );
 }

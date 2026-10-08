@@ -29,8 +29,6 @@
   font-synthesis: none;
   --brand: #1b365d;
   --canvas: #f0f3f4;
-  --pearl-fill: rgb(250 248 241 / 46%);
-  --pearl-rim-cool: rgb(171 193 213 / 34%);
   --surface-shadow: 0 24px 64px rgb(36 44 51 / 13%), 0 3px 14px rgb(36 44 51 / 6%);
 }
 
@@ -173,46 +171,13 @@ body {
 }
 
 .message-island,
-.glass-island,
-.layered-glass-island {
+.glass-island {
   position: relative;
   min-width: 0;
 }
 
 .glass-island {
   isolation: isolate;
-}
-
-.static-glass-island {
-  --pearl-fill: rgb(250 248 241 / 39%);
-  --pearl-rim-cool: rgb(171 193 213 / 20%);
-  --static-glass-shadow: 0 18px 44px rgb(36 44 51 / 8%), 0 2px 9px rgb(36 44 51 / 3%);
-  border: 0;
-  background: transparent;
-}
-
-.static-glass-island.is-refractive,
-.static-glass-island.is-pearl,
-.static-glass-island.is-solid {
-  box-shadow: var(--static-glass-shadow);
-}
-
-.static-glass-island > .glass-island__surface.is-refractive {
-  border: 1px solid rgb(255 255 255 / 32%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 48%);
-}
-
-.static-glass-island > .glass-island__surface.is-pearl {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 48%), inset 0 -1px 0 rgb(70 83 96 / 6%);
-}
-
-.static-glass-island > .glass-island__surface.is-solid {
-  border: 0;
-  box-shadow: inset 0 0 0 1px rgb(27 54 93 / 8%);
-}
-
-.static-glass-island > .glass-island__surface.is-pearl::before {
-  opacity: .62;
 }
 
 .message-island {
@@ -224,74 +189,10 @@ body {
   box-shadow: none;
 }
 
-.glass-surface-layer {
-  position: absolute !important;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.glass-surface-layer__fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-
-.layered-glass-island__content,
 .glass-island__content {
   position: relative;
   z-index: 2;
   min-width: 0;
-}
-
-.glass-surface-layer.is-pearl {
-  background:
-    linear-gradient(145deg, rgb(255 255 255 / 18%), transparent 38%),
-    var(--pearl-fill);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 84%),
-    inset 0 -1px 0 rgb(70 83 96 / 10%),
-    var(--surface-shadow);
-  -webkit-backdrop-filter: blur(22px) saturate(116%) brightness(103%);
-  backdrop-filter: blur(22px) saturate(116%) brightness(103%);
-}
-
-.glass-surface-layer.is-pearl::before,
-.glass-surface-layer.is-pearl::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.glass-surface-layer.is-pearl::before {
-  z-index: 0;
-  padding: 1.25px;
-  background: linear-gradient(140deg, rgb(255 255 255 / 88%), rgb(255 255 255 / 48%) 24%, transparent 45%, var(--pearl-rim-cool) 73%, rgb(72 86 103 / 16%));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
-.glass-surface-layer.is-pearl::after {
-  z-index: 1;
-  background:
-    radial-gradient(120% 78% at 14% -10%, rgb(255 255 255 / 34%), transparent 52%),
-    radial-gradient(82% 54% at 96% 105%, var(--pearl-rim-cool), transparent 62%);
-  opacity: .72;
-}
-
-.glass-surface-layer.is-solid {
-  border: 1px solid #cbd2d6;
-  background: #faf9f5;
-  box-shadow: 0 18px 44px rgb(36 44 51 / 12%);
 }
 
 .message-island__content {
@@ -330,22 +231,22 @@ body {
   border-radius: 999px;
   width: 100%;
   color: var(--brand);
-  background: transparent;
-  box-shadow: none;
   font-size: 16px;
   text-decoration: none;
   touch-action: manipulation;
-  transition: transform 150ms cubic-bezier(.2, .74, .22, 1), background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .home-action__icon {
   width: 18px;
   height: 18px;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .not-found-action-island {
-  --pearl-fill: rgb(250 248 241 / 35%);
   width: fit-content;
   min-width: 138px;
   min-height: 52px;
@@ -357,25 +258,6 @@ body {
 .not-found-action-island.glass-island {
   position: relative;
   isolation: isolate;
-}
-
-.not-found-action-island.is-refractive {
-  border: 1px solid rgb(255 255 255 / 54%);
-  background: rgb(250 248 241 / 6%);
-  box-shadow: 0 12px 28px rgb(36 44 51 / 9%);
-}
-
-.not-found-action-island > .glass-island__surface {
-  border-radius: inherit;
-}
-
-.not-found-action-island > .glass-island__surface.is-pearl {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 84%),
-    inset 0 -1px 0 rgb(70 83 96 / 10%),
-    0 12px 28px rgb(36 44 51 / 10%);
-  -webkit-backdrop-filter: blur(19px) saturate(116%) brightness(103%);
-  backdrop-filter: blur(19px) saturate(116%) brightness(103%);
 }
 
 .not-found-action-island .glass-island__content {
@@ -394,6 +276,7 @@ body {
 }
 
 @media (hover: hover) {
+
   .home-action:hover {
     color: #244873;
     text-decoration: none;
@@ -401,6 +284,7 @@ body {
 }
 
 @media (max-width: 820px) {
+
   .not-found-layout {
     grid-template-columns: 1fr;
     align-content: center;
@@ -446,6 +330,7 @@ body {
 }
 
 @media (max-height: 680px) and (min-width: 821px) {
+
   .not-found-layout {
     padding-block: 24px;
   }
@@ -456,9 +341,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-action {
-    transition: none;
-  }
 
   .ink-flow-layer {
     animation: none;
@@ -467,19 +349,8 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+
   .message-island {
     border: 1px solid #cbd2d6;
-  }
-
-  .glass-surface-layer {
-    background: #faf9f5;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  .glass-surface-layer::before,
-  .glass-surface-layer::after {
-    content: none;
   }
 }

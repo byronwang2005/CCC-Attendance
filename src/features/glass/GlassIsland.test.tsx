@@ -1,146 +1,44 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  ACTION_GLASS_OPTICS,
-  detectGlassCapabilities,
-  GlassIsland,
-  LIVE_GLASS_OPTICS,
-  StaticGlassIsland
-} from './GlassIsland';
+import { GlassIsland, StaticGlassIsland } from './GlassIsland';
+import { detectGlassCapabilities, nextGlassQuality } from './glass-environment';
 
-vi.mock('@samasante/liquid-glass', () => ({
-  Glass: ({ children, optics, ...props }: { children: React.ReactNode; optics: unknown }) => (
-    <div data-testid="liquid-glass" data-optics={JSON.stringify(optics)} {...props}>{children}</div>
-  )
-}));
-
-const CHROME_DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36';
-const SAFARI_DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15';
-const CHROME_ANDROID = 'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140.0.0.0 Mobile Safari/537.36';
-
-const mockEnvironment = ({
-  userAgent = CHROME_DESKTOP,
-  supportsBackdrop = true,
-  reducedMotion = false,
-  reducedTransparency = false,
-  forcedColors = false,
-  mobile
-}: {
-  userAgent?: string;
-  supportsBackdrop?: boolean;
-  reducedMotion?: boolean;
-  reducedTransparency?: boolean;
-  forcedColors?: boolean;
-  mobile?: boolean;
-} = {}) => {
-  vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({
-    matches: query.includes('prefers-reduced-motion')
-      ? reducedMotion
-      : query.includes('prefers-reduced-transparency')
-        ? reducedTransparency
-        : query.includes('forced-colors') ? forcedColors : false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
-  }));
-  Object.defineProperty(window.navigator, 'userAgent', {
-    configurable: true,
-    value: userAgent
-  });
-  Object.defineProperty(window.navigator, 'userAgentData', {
-    configurable: true,
-    value: mobile === undefined ? undefined : {
-      brands: [{ brand: 'Chromium' }],
-      mobile
-    }
-  });
-  vi.stubGlobal('CSS', { supports: vi.fn(() => supportsBackdrop) });
+const environment = (preference = '') => {
+  vi.spyOn(window, 'matchMedia').mockImplementation(query => ({ matches: query.includes(preference || 'no-preference-test'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }));
+  vi.stubGlobal('CSS', { supports: () => true });
 };
-
-describe('GlassIsland', () => {
-  afterEach(() => {
-    cleanup();
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+describe('material fallback and quality policy', () => {
+  it.each(['Safari/605.1.15', 'Chrome/140.0.0.0', 'Mobile Safari/604.1'])('does not gate rendering on %s', userAgent => {
+    environment();
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent);
+    expect(detectGlassCapabilities()).toEqual({ material: 'backdrop', motion: true });
   });
-
-  it('uses the live lens with calibrated optics on desktop Chromium', async () => {
-    mockEnvironment();
-    render(<GlassIsland variant="interactive" shape="capsule"><button>继续</button></GlassIsland>);
-    expect(await screen.findByTestId('liquid-glass')).toHaveAttribute('data-optics', JSON.stringify(LIVE_GLASS_OPTICS));
-    expect(screen.getByText('继续').closest('[data-glass-material]')).toHaveAttribute('data-glass-material', 'refractive');
-  });
-
-  it('uses the stronger action preset for action islands', async () => {
-    mockEnvironment();
-    render(
-      <GlassIsland variant="interactive" shape="capsule" opticsPreset="action" className="action-island">
-        <button>下一步</button>
-      </GlassIsland>
-    );
-    expect(await screen.findByTestId('liquid-glass')).toHaveAttribute('data-optics', JSON.stringify(ACTION_GLASS_OPTICS));
-  });
-
-  it.each([
-    ['macOS Safari', SAFARI_DESKTOP],
-    ['Android Chrome', CHROME_ANDROID],
-    ['iOS Chrome', 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/140.0.0.0 Mobile/15E148 Safari/604.1'],
-    ['Firefox', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:142.0) Gecko/20100101 Firefox/142.0']
-  ])('uses pearl material on %s', (_name, userAgent) => {
-    mockEnvironment({ userAgent });
-    expect(detectGlassCapabilities()).toEqual({ material: 'pearl', motion: true });
-    const { container } = render(<GlassIsland variant="interactive" shape="capsule"><button>继续</button></GlassIsland>);
-    expect(container.querySelector('[data-glass-material="pearl"]')).toBeInTheDocument();
-    expect(screen.queryByTestId('liquid-glass')).not.toBeInTheDocument();
-  });
-
-  it('keeps the refractive material while disabling motion', async () => {
-    mockEnvironment({ reducedMotion: true });
-    expect(detectGlassCapabilities()).toEqual({ material: 'refractive', motion: false });
-    render(<GlassIsland variant="interactive" shape="capsule"><button>继续</button></GlassIsland>);
-    expect(await screen.findByTestId('liquid-glass')).toHaveClass('reduces-motion');
-  });
-
-  it.each([
-    ['missing backdrop filters', { supportsBackdrop: false }],
-    ['reduced transparency', { reducedTransparency: true }],
-    ['forced colors', { forcedColors: true }]
-  ])('uses solid material for %s', (_name, environment) => {
-    mockEnvironment(environment);
+  it.each(['prefers-reduced-transparency', 'forced-colors'])('uses an opaque surface for %s', preference => {
+    environment(preference);
     expect(detectGlassCapabilities().material).toBe('solid');
-    const { container } = render(<GlassIsland variant="interactive" shape="capsule"><button>继续</button></GlassIsland>);
-    expect(container.querySelector('[data-glass-material="solid"]')).toBeInTheDocument();
   });
-
-  it('keeps disabled controls refractive while layering content surfaces separately', async () => {
-    mockEnvironment();
-    render(
-      <>
-        <GlassIsland variant="interactive" shape="capsule" disabled><button>停用</button></GlassIsland>
-        <GlassIsland variant="content" shape="panel"><section>正文</section></GlassIsland>
-      </>
-    );
-    const disabledIsland = screen.getByText('停用').closest('[data-glass-material]');
-    expect(disabledIsland).toHaveAttribute('data-glass-material', 'refractive');
-    expect(disabledIsland).toHaveClass('is-disabled');
-    const contentIsland = screen.getByText('正文').closest('[data-glass-material]');
-    expect(contentIsland).toHaveAttribute('data-glass-material', 'refractive');
-    expect(contentIsland?.querySelector('[data-glass-surface="refractive"]')).toBeInTheDocument();
-    expect(contentIsland?.querySelector('.glass-island__content')?.previousElementSibling).toHaveAttribute('data-glass-surface', 'refractive');
-    expect(screen.getAllByTestId('liquid-glass')).toHaveLength(1);
+  it('keeps transparency but removes movement for reduced motion', () => {
+    environment('prefers-reduced-motion');
+    expect(detectGlassCapabilities()).toEqual({ material: 'backdrop', motion: false });
   });
-
-  it('uses the shared content surface for static glass', () => {
-    mockEnvironment({ userAgent: SAFARI_DESKTOP });
-    render(<StaticGlassIsland shape="panel">静态内容</StaticGlassIsland>);
-
-    const island = screen.getByText('静态内容').closest('[data-glass-material]');
-    expect(island).toHaveClass('static-glass-island', 'glass-island--content');
-    expect(island).not.toHaveClass('glass-island--interactive');
-    expect(island?.querySelector(':scope > .glass-island__surface')).toHaveAttribute('data-glass-surface', 'pearl');
+  it('waits for sustained evidence and lowers resolution before removing optics', () => {
+    expect(nextGlassQuality('high', [60])).toBe('high');
+    expect(nextGlassQuality('high', Array(120).fill(16.7))).toBe('high');
+    expect(nextGlassQuality('high', Array(120).fill(24))).toBe('low');
+    expect(nextGlassQuality('low', Array(120).fill(24))).toBe('low');
+    expect(nextGlassQuality('low', Array(120).fill(33))).toBe('fallback');
+    expect(nextGlassQuality('fallback', Array(120).fill(16))).toBe('fallback');
+  });
+  it('keeps controls usable when no background producer exists', () => {
+    environment();
+    render(<GlassIsland shape="capsule"><button>继续</button></GlassIsland>);
+    expect(screen.getByRole('button', { name: '继续' })).toBeEnabled();
+    expect(screen.getByText('继续').closest('[data-glass-renderer]')).toHaveAttribute('data-glass-renderer', 'backdrop');
+  });
+  it('does not create optical surfaces for content', () => {
+    const { container } = render(<StaticGlassIsland shape="panel">正文</StaticGlassIsland>);
+    expect(screen.getByText('正文').closest('[data-glass-material]')).toHaveAttribute('data-glass-material', 'standard');
+    expect(container.querySelector('canvas, .regular-glass-surface')).toBeNull();
   });
 });

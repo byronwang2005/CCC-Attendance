@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { publishGlassBackground, releaseGlassBackground } from '../glass/glass-environment';
 import {
   chooseQualityTier,
   DEFAULT_QUALITY_TIER,
@@ -413,6 +414,7 @@ class InkFlowRenderer {
     gl.uniform1f(gl.getUniformLocation(this.inkProgram, 'u_ink_opacity'), this.palette.inkOpacity);
     gl.uniform1f(gl.getUniformLocation(this.inkProgram, 'u_accent_opacity'), this.palette.accentOpacity);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    publishGlassBackground(this.canvas, this.targetPalette.backgroundHex, now);
   }
 
   private sampleQuality(frameMs: number) {
@@ -493,12 +495,8 @@ export function InkFlowBackground({
     if (!canvas) return;
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const coarsePointerQuery = window.matchMedia('(hover: none), (pointer: coarse)');
-    const motion = resolveInkMotionPolicy({
-      coarsePointer: coarsePointerQuery.matches,
-      reducedMotion: reducedMotionQuery.matches
-    });
-
     const start = () => {
+      const motion = resolveInkMotionPolicy({ coarsePointer: coarsePointerQuery.matches, reducedMotion: reducedMotionQuery.matches });
       rendererRef.current?.destroy();
       try {
         rendererRef.current = new InkFlowRenderer(canvas, paletteRef.current, motion);
@@ -515,22 +513,28 @@ export function InkFlowBackground({
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       rendererRef.current?.pause();
+      releaseGlassBackground();
     };
     const handleContextRestored = () => start();
 
     start();
-    if (motion.pointerReactive) window.addEventListener('pointermove', handlePointer, { passive: true });
+    window.addEventListener('pointermove', handlePointer, { passive: true });
+    reducedMotionQuery.addEventListener('change', start);
+    coarsePointerQuery.addEventListener('change', start);
     document.addEventListener('visibilitychange', handleVisibility);
     canvas.addEventListener('webglcontextlost', handleContextLost);
     canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
     return () => {
-      if (motion.pointerReactive) window.removeEventListener('pointermove', handlePointer);
+      window.removeEventListener('pointermove', handlePointer);
+      reducedMotionQuery.removeEventListener('change', start);
+      coarsePointerQuery.removeEventListener('change', start);
       document.removeEventListener('visibilitychange', handleVisibility);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       canvas.removeEventListener('webglcontextrestored', handleContextRestored);
       rendererRef.current?.destroy();
       rendererRef.current = null;
+      releaseGlassBackground();
     };
   }, []);
 
