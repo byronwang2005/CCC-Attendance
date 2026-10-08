@@ -53,6 +53,9 @@
     "three": "^0.185.1"
   },
   "overrides": {
-    "undici": "7.29.0"
+    "undici": "7.29.1",
+    "miniflare": {
+      "sharp": "0.35.5"
+    }
   }
 }
