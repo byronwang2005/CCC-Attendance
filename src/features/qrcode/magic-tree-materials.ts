@@ -1,8 +1,10 @@
 import { DoubleSide, MeshLambertMaterial, PlaneGeometry } from 'three';
 
+export type FoliageKind = 'grass' | 'leaf' | 'petal' | 'broadleaf' | 'snow';
+
 /** UV coordinates survive the organic shape so the same mesh can settle into a square. */
-export function foliageGeometry(kind: 'grass' | 'leaf') {
-  const geometry = new PlaneGeometry(1, 1, kind === 'leaf' ? 16 : 2, kind === 'leaf' ? 8 : 12);
+export function foliageGeometry(kind: FoliageKind) {
+  const geometry = new PlaneGeometry(1, 1, kind === 'grass' ? 2 : 16, kind === 'leaf' ? 8 : 12);
   const positions = geometry.attributes.position;
   const uv = geometry.attributes.uv;
   for (let i = 0; i < positions.count; i++) {
@@ -10,19 +12,35 @@ export function foliageGeometry(kind: 'grass' | 'leaf') {
     if (kind === 'grass') {
       positions.setXYZ(i, (u - .5) * (1 - v * .985) + .27 * v * v,
         v, .12 * v * v + .025 * Math.sin(u * Math.PI));
-    } else {
+    } else if (kind === 'leaf') {
       const angle = (u - .5) * 2.5;
       const edge = 1 - .13 * Math.exp(-angle * angle * 90) + .025 * Math.cos(u * Math.PI * 24);
       const radius = .025 + v * (.975 + (edge - 1) * Math.pow(v, 5));
       positions.setXYZ(i, Math.sin(angle) * radius * .68, Math.cos(angle) * radius - .48,
         .11 * Math.sin(angle * 2) * v * v + .065 * Math.cos(u * Math.PI * 8) * v + .08 * v * v);
+    } else if (kind === 'petal') {
+      // A rounded blossom petal cups upward, with its narrow tip attached to the flower.
+      const round = Math.pow(Math.sin(v * Math.PI), .58);
+      const width = round * (.58 + .3 * v);
+      positions.setXYZ(i, (u - .5) * width, v - .5,
+        .06 * round + .14 * (u - .5) ** 2 * 4 * round + .025 * Math.sin(v * Math.PI * 2));
+    } else if (kind === 'broadleaf') {
+      // A full elliptical leaf, unlike the fan-shaped autumn leaf, with a raised midrib.
+      const width = Math.pow(Math.sin(v * Math.PI), .65) * (1.22 + .025 * Math.cos(v * Math.PI * 20));
+      positions.setXYZ(i, (u - .5) * width, v - .5,
+        .15 * (1 - (u - .5) ** 2 * 4) * Math.sin(v * Math.PI) + .04 * Math.sin(v * Math.PI * 2));
+    } else {
+      // A soft, low oval mound follows the upper side of a branch or the ground.
+      const width = Math.sqrt(Math.max(0, 1 - (v * 2 - 1) ** 2));
+      positions.setXYZ(i, (u - .5) * width * 1.5, (v - .5) * .65,
+        .14 * width * (1 - (u - .5) ** 2 * 2.8) + .008 * Math.sin(u * 13 + v * 7) * width);
     }
   }
   geometry.computeVertexNormals();
   return geometry;
 }
 
-export function foliageMaterial(kind: 'grass' | 'leaf') {
+export function foliageMaterial(kind: FoliageKind) {
   const material = new MeshLambertMaterial({ side: DoubleSide });
   material.onBeforeCompile = shader => {
     shader.vertexShader = 'attribute float reveal; varying float vReveal; varying vec2 vOrganicUv;\n' + shader.vertexShader;
@@ -39,17 +57,29 @@ export function foliageMaterial(kind: 'grass' | 'leaf') {
         float fiber = .5 + .5 * sin(organic.x * 43.0 + sin(organic.y * 13.0));
         float ridge = exp(-pow((organic.x - .5) * 20.0, 2.0));
         float detail = .67 + .28 * organic.y + .08 * fiber + .09 * ridge;
-      ` : `
+      ` : kind === 'leaf' ? `
         float vein = pow(.5 + .5 * cos(organic.x * 125.6637), 18.0);
         float fineVein = pow(.5 + .5 * cos(organic.x * 251.3274 + organic.y * 2.0), 24.0);
         float mottling = sin(organic.x * 67.0 + sin(organic.y * 31.0)) * sin(organic.y * 83.0);
         float detail = .85 + .13 * organic.y - .10 * vein - .045 * fineVein + .04 * mottling;
+      ` : kind === 'petal' ? `
+        float fold = .5 + .5 * cos((organic.x - .5) * 20.0);
+        float blush = sin(organic.y * 3.14159);
+        float detail = .84 + .13 * organic.y + .055 * fold * blush;
+      ` : kind === 'broadleaf' ? `
+        float midrib = exp(-pow((organic.x - .5) * 32.0, 2.0));
+        float branches = pow(.5 + .5 * cos((organic.y - abs(organic.x - .5) * .72) * 58.0), 18.0);
+        float detail = .84 + .10 * organic.y + .07 * midrib - .055 * branches;
+      ` : `
+        float softMound = sin(organic.y * 3.14159) * sin(organic.x * 3.14159);
+        float detail = .94 + .06 * softMound;
       `}
       outgoingLight = mix(outgoingLight * detail, diffuseColor.rgb, vReveal);
       #include <opaque_fragment>
     `);
   };
-  material.customProgramCacheKey = () => `autumn-square-${kind}-v1`;
+  material.customProgramCacheKey = () => kind === 'grass' || kind === 'leaf'
+    ? `autumn-square-${kind}-v1` : `season-square-${kind}-v1`;
   return material;
 }
 

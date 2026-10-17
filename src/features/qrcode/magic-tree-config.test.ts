@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { cameraEase, TREE_TRANSITION_SECONDS, advanceTreeTransition, nearestDarkCell, treeRandom, treeTransition, treeWind, qrProtectedCells, qrModuleColors, canopyCoverage, meadowDensity, TREE_PALETTE } from './magic-tree-config';
+import { createHash } from 'node:crypto';
+import qr from 'qr-image';
+import jsQR from 'jsqr';
+import { PNG } from 'pngjs';
+import { cameraEase, TREE_TRANSITION_SECONDS, advanceTreeTransition, nearestDarkCell, treeRandom, treeTransition, treeWind, qrProtectedCells, qrModuleColors, canopyCoverage, meadowDensity, TREE_PALETTE, TREE_SEASONS, autumnGust, seasonWind, type TreeSeason } from './magic-tree-config';
+import { extractQrModules } from './qr-modules';
 
 describe('autumn reveal choreography', () => {
   it('uses a two-second Core Animation ease-in-out camera path', () => {
@@ -102,5 +107,83 @@ describe('autumn distribution and scan colors', () => {
       if (y && x < size - 1) expect(color).not.toBe(colors[y - 1][x + 1]);
       if (!x || !y || x === size - 1 || y === size - 1) expect(TREE_PALETTE.scanGrass).toContain(color);
     }));
+  });
+});
+
+describe('season palettes and coherent wind', () => {
+  const seasons = Object.keys(TREE_SEASONS) as TreeSeason[];
+
+  it('preserves the original default autumn color map and palette', () => {
+    expect(TREE_SEASONS.autumn.palette).toBe(TREE_PALETTE);
+    expect(qrModuleColors(41)).toEqual(qrModuleColors(41, 'autumn'));
+    expect(createHash('sha256').update(JSON.stringify(qrModuleColors(41))).digest('hex'))
+      .toBe('1bca7f0e7b7e1ed296194232c50cc21ffdb958f097c00ee64639f112a83063eb');
+  });
+
+  it('keeps the approved diagonal families and derives edge variants around the approved base', () => {
+    const seeds = { spring: ['#B57786', '#8A805A', '#6D7F57'], summer: ['#4C8D72', '#7B8B4B', '#647A52'], winter: ['#71869F', '#818B96', '#6E777D'] };
+    for (const season of ['spring', 'summer', 'winter'] as const) {
+      const palette = TREE_SEASONS[season].palette;
+      expect(palette.scanLeaf.slice(0, 2)).toEqual(seeds[season].slice(0, 2));
+      for (const offset of [1, 3, 5]) {
+        const average = palette.scanGrass.reduce((sum, color) => sum + parseInt(color.slice(offset, offset + 2), 16), 0) / 9;
+        expect(Math.abs(average - parseInt(seeds[season][2].slice(offset, offset + 2), 16))).toBeLessThan(.5);
+      }
+    }
+  });
+
+  it.each(seasons)('uses stable separated module colors and its own edge family for %s', season => {
+    const colors = qrModuleColors(45, season);
+    expect(colors).toEqual(qrModuleColors(45, season));
+    colors.forEach((row, y) => row.forEach((color, x) => {
+      expect(color).toMatch(/^#[0-9A-F]{6}$/);
+      for (const neighbor of [row[x - 1], colors[y - 1]?.[x]].filter(Boolean)) {
+        const distance = Math.hypot(...[1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16) - parseInt(neighbor.slice(offset, offset + 2), 16)));
+        expect(distance).toBeGreaterThanOrEqual(14);
+      }
+      if (!x || !y || x === 44 || y === 44) expect(TREE_SEASONS[season].palette.scanGrass).toContain(color);
+    }));
+  });
+
+  it.each(seasons)('decodes the %s QR palette at small and large display scales', season => {
+    for (const value of ['https://example.com/season-preview', `https://ccc.nottingham.edu.cn/study/attendance?scheduleId=${'abc123'.repeat(8)}&time=1777777777777`]) {
+      const buffer = qr.imageSync(value, { type: 'png', margin: 2, size: 10 });
+      if (typeof buffer === 'string') throw new Error('Expected PNG');
+      const png = PNG.sync.read(buffer);
+      const modules = extractQrModules({ ...png, data: new Uint8ClampedArray(png.data) });
+      const colors = qrModuleColors(modules.length, season);
+      for (const scale of [4, 7]) {
+        const width = (modules.length + 8) * scale;
+        const data = new Uint8ClampedArray(width * width * 4);
+        for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
+          const mx = Math.floor(x / scale) - 4, my = Math.floor(y / scale) - 4;
+          const color = modules[my]?.[mx] ? colors[my][mx] : TREE_SEASONS[season].palette.background;
+          data.set([1, 3, 5].map(offset => parseInt(color.slice(offset, offset + 2), 16)).concat(255), (y * width + x) * 4);
+        }
+        expect(jsQR(data, width, width)?.data).toBe(value);
+      }
+    }
+  });
+
+  it('shares a bounded autumn gust front with calm gaps and smooth spatial propagation', () => {
+    const samples = Array.from({ length: 208 }, (_, i) => autumnGust(i * .05, 0, 0));
+    expect(Math.min(...samples)).toBe(0);
+    expect(Math.max(...samples)).toBe(1);
+    expect(samples.filter(value => value === 0).length).toBeGreaterThan(120);
+    expect(autumnGust(1.2, 0, 0)).toBeCloseTo(autumnGust(11.6, 0, 0));
+    expect(autumnGust(.5, 0, 0)).toBeGreaterThan(autumnGust(.5, 2, 0));
+    expect(Math.abs(autumnGust(.5, 1, 1) - autumnGust(.5, 1.001, 1))).toBeLessThan(.001);
+    expect(seasonWind(7, 1, 1, 'autumn')).toBe(0);
+  });
+
+  it('varies season wind strengths while keeping nearby plants coherent and seeds independent', () => {
+    const amplitude = (season: TreeSeason) => Math.max(...Array.from({ length: 200 }, (_, i) => Math.abs(seasonWind(i * .1, 0, 0, season))));
+    expect(amplitude('summer')).toBeGreaterThan(amplitude('spring'));
+    expect(amplitude('winter')).toBeGreaterThan(amplitude('summer'));
+    for (const season of seasons) expect(Math.abs(seasonWind(2, 1, 1, season) - seasonWind(2, 1.001, 1, season))).toBeLessThan(.001);
+    const a = treeRandom(17), b = treeRandom(17), c = treeRandom(18);
+    expect(Array.from({ length: 8 }, a)).toEqual(Array.from({ length: 8 }, b));
+    expect(treeRandom()()).toBe(treeRandom(74819)());
+    expect(c()).not.toBe(treeRandom(17)());
   });
 });

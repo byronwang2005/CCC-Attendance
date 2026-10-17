@@ -36,6 +36,40 @@ describe('MagicTreeStage', () => {
     await screen.findByRole('button', { name: '俯视查看二维码' });
     unmount(); expect(second.destroy).toHaveBeenCalledOnce();
   });
+  it('cleans up on season changes, resets to the tree and uses the selected return label', async () => {
+    const first = stage(), second = stage(); create.mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+    const { rerender } = render(<MagicTreeStage imageUrl="blob:qr" season="spring" />);
+    const button = await screen.findByRole('button', { name: '俯视查看二维码' });
+    fireEvent.click(button);
+    expect(screen.getByRole('button', { name: '返回春季树景' })).toHaveAttribute('aria-pressed', 'true');
+    const signal = create.mock.calls[0][2] as AbortSignal;
+    rerender(<MagicTreeStage imageUrl="blob:qr" season="winter" />);
+    await screen.findByRole('button', { name: '俯视查看二维码' });
+    expect(first.destroy).toHaveBeenCalledOnce();
+    expect(signal.aborted).toBe(true);
+    expect(create.mock.calls[1][4]).toBe('winter');
+    expect(document.querySelector('.magic-tree-stage')).toHaveAttribute('data-state', 'tree');
+    expect(document.querySelector('.magic-tree-stage')).toHaveAttribute('data-season', 'winter');
+    fireEvent.click(screen.getByRole('button', { name: '俯视查看二维码' }));
+    expect(screen.getByRole('button', { name: '返回冬季树景' })).toBeVisible();
+    expect(second.setQr).toHaveBeenLastCalledWith(true);
+  });
+  it('ignores failure from an aborted season without clearing the replacement scene', async () => {
+    const oldScene = stage(), activeScene = stage();
+    let finishOld!: (value: typeof oldScene) => void;
+    create.mockReturnValueOnce(new Promise(resolve => { finishOld = resolve; })).mockResolvedValueOnce(activeScene);
+    const { rerender } = render(<MagicTreeStage imageUrl="blob:qr" season="spring" />);
+    const staleFailure = create.mock.calls[0][3];
+    rerender(<MagicTreeStage imageUrl="blob:qr" season="summer" />);
+    await screen.findByRole('button', { name: '俯视查看二维码' });
+    const { act } = await import('@testing-library/react');
+    await act(async () => { staleFailure(); finishOld(oldScene); });
+    expect(oldScene.destroy).toHaveBeenCalledOnce();
+    expect(activeScene.destroy).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '俯视查看二维码' }));
+    expect(activeScene.setQr).toHaveBeenCalledWith(true);
+  });
   it('disposes initialization that resolves after unmount', async () => {
     const instance = stage(); let resolve!: (value: typeof instance) => void;
     create.mockReturnValue(new Promise(done => { resolve = done; }));
@@ -57,5 +91,20 @@ describe('MagicTreeStage', () => {
     expect(screen.getByRole('alert')).toBeVisible();
     expect(instance.destroy).toHaveBeenCalled();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+  it('retries the chosen season after context loss and disposes a failed scene once', async () => {
+    const first = stage(), replacement = stage();
+    create.mockResolvedValueOnce(first).mockResolvedValueOnce(replacement);
+    const { unmount } = render(<MagicTreeStage imageUrl="blob:qr" season="autumn" />);
+    await screen.findByRole('button', { name: '俯视查看二维码' });
+    const { act } = await import('@testing-library/react');
+    act(() => { create.mock.calls[0][3](); create.mock.calls[0][3](); });
+    expect(first.destroy).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: '重新加载树景' }));
+    await screen.findByRole('button', { name: '俯视查看二维码' });
+    expect(create.mock.calls[1][4]).toBe('autumn');
+    unmount();
+    expect(first.destroy).toHaveBeenCalledOnce();
+    expect(replacement.destroy).toHaveBeenCalledOnce();
   });
 });

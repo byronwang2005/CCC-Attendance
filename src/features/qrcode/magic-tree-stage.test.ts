@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { InstancedMesh, OrthographicCamera, Scene, Matrix4, Vector3 } from 'three';
 import { createMagicTreeStage } from './magic-tree-stage';
+import type { TreeSeason } from './magic-tree-config';
 
 const rendererState = vi.hoisted(() => ({ render: vi.fn(), clear: vi.fn(), dispose: vi.fn() }));
 vi.mock('./qr-modules', () => ({ loadQrModules: vi.fn(async () => Array.from({ length: 21 }, (_, y) => Array.from({ length: 21 }, (_, x) => (x + y) % 3 !== 0))) }));
@@ -39,11 +40,11 @@ beforeEach(() => {
 });
 afterEach(() => { clean?.(); clean = undefined; vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-async function mount(width = 550) {
+async function mount(width = 550, season?: TreeSeason) {
   const host = document.createElement('div');
   Object.defineProperties(host, { clientWidth: { value: width }, clientHeight: { value: 480 } });
   const fail = vi.fn();
-  const stage = await createMagicTreeStage(host, 'blob:qr', new AbortController().signal, fail);
+  const stage = await createMagicTreeStage(host, 'blob:qr', new AbortController().signal, fail, season);
   clean = stage.destroy;
   tick(); return { host, stage, fail };
 }
@@ -181,5 +182,77 @@ describe('tree rendering lifecycle', () => {
     expect(host.querySelector('canvas')).toBeNull();
     expect(callbacks.size).toBe(0);
     stage.destroy(); expect(rendererState.dispose).toHaveBeenCalledOnce();
+  });
+});
+
+describe('seasonal scene acceptance', () => {
+  it.each<TreeSeason>(['spring', 'summer', 'autumn', 'winter'])('%s settles every visible material into dark cells and removes atmosphere', async season => {
+    const { stage, fail } = await mount(390, season);
+    stage.setQr(true); tick(55);
+    const [scene, camera] = rendererState.render.mock.calls.at(-1) as [Scene, OrthographicCamera];
+    const occupied = new Set<string>(), matrix = new Matrix4();
+    for (const name of ['meadow', 'canopy', 'fallen-leaves', 'young-leaves']) {
+      const mesh = scene.getObjectByName(name) as InstancedMesh;
+      for (let i = 0; i < mesh.count; i++) {
+        mesh.getMatrixAt(i, matrix);
+        const center = new Vector3().setFromMatrixPosition(matrix);
+        const x = Math.round(center.x / (3.65 / 21) + 10), z = Math.round(center.z / (3.65 / 21) + 10);
+        expect((x + z) % 3).not.toBe(0); occupied.add(`${x},${z}`);
+        const scale = new Vector3().setFromMatrixScale(matrix);
+        expect(scale.x).toBeCloseTo(3.65 / 21, 6); expect(scale.y).toBeCloseTo(scale.x, 6);
+        expect(mesh.geometry.getAttribute('reveal').getX(i)).toBe(1);
+      }
+    }
+    expect(occupied.size).toBe(294);
+    for (const name of ['season-atmosphere', 'season-glints', 'canopy-shadow']) expect(scene.getObjectByName(name)?.visible).toBe(false);
+    expect((camera.right - camera.left) / camera.zoom).toBeGreaterThanOrEqual(3.65 / 21 * 29);
+    const still = objects().canopy.instanceMatrix.array.slice(); tick(15);
+    expect(objects().canopy.instanceMatrix.array).toEqual(still);
+    expect(fail).not.toHaveBeenCalled();
+  });
+
+  it('keeps winter branch snow anchored while its atmospheric flakes continue moving', async () => {
+    await mount(550, 'winter');
+    const before = objects().canopy.instanceMatrix.array.slice();
+    const [scene] = rendererState.render.mock.calls.at(-1) as [Scene];
+    const flakes = scene.getObjectByName('season-atmosphere') as InstancedMesh;
+    expect(flakes.count).toBe(96);
+    const snowBefore = flakes.instanceMatrix.array.slice(); tick(35);
+    expect(objects().canopy.instanceMatrix.array).toEqual(before);
+    expect(flakes.instanceMatrix.array).not.toEqual(snowBefore);
+    tick(172);
+    const edge = flakes.instanceMatrix.array.slice(); tick(2);
+    for (let i = 0; i < flakes.count; i++) {
+      const beforeScale = Math.hypot(edge[i * 16], edge[i * 16 + 1], edge[i * 16 + 2]);
+      const afterScale = Math.hypot(flakes.instanceMatrix.array[i * 16], flakes.instanceMatrix.array[i * 16 + 1], flakes.instanceMatrix.array[i * 16 + 2]);
+      if (beforeScale > .005 && afterScale > .005) expect(Math.abs(flakes.instanceMatrix.array[i * 16 + 12] - edge[i * 16 + 12])).toBeLessThan(.15);
+    }
+  });
+
+  it('uses the same intermediate camera path and tree skeleton in every season', async () => {
+    let referenceCamera: number[] | undefined;
+    let referenceBranches: number[][] | undefined;
+    for (const season of ['spring', 'summer', 'autumn', 'winter'] as const) {
+      const { stage } = await mount(550, season);
+      stage.setQr(true); tick(16);
+      const [scene, camera] = rendererState.render.mock.calls.at(-1) as [Scene, OrthographicCamera];
+      const branches: number[][] = [];
+      scene.traverse(object => {
+        if ('geometry' in object && (object.geometry as { type?: string }).type === 'TubeGeometry') branches.push(Array.from((object as InstancedMesh).geometry.getAttribute('position').array));
+      });
+      const path = [...camera.position.toArray(), ...camera.up.toArray(), camera.zoom];
+      if (referenceCamera) { expect(path).toEqual(referenceCamera); expect(branches).toEqual(referenceBranches); }
+      referenceCamera = path; referenceBranches = branches; stage.destroy();
+    }
+  });
+
+  it.each<TreeSeason>(['spring', 'summer', 'autumn', 'winter'])('%s respects reduced motion and restores its natural materials', async season => {
+    reduced = true;
+    const { stage } = await mount(550, season);
+    const before = objects().canopy.instanceMatrix.array.slice();
+    expect(callbacks.size).toBe(0);
+    stage.setQr(true); tick(); stage.setQr(false); tick();
+    expect(objects().canopy.instanceMatrix.array).toEqual(before);
+    expect(callbacks.size).toBe(0);
   });
 });

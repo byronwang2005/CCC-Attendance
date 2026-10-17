@@ -12,6 +12,18 @@ const scanVariants = (color: string) => Array.from({ length: 9 }, (_, i) => {
 });
 const colorDistance = (a: string, b: string) => Math.hypot(...rgb(a).map((value, i) => value - rgb(b)[i]));
 
+export type TreeSeason = 'spring' | 'summer' | 'autumn' | 'winter';
+
+export interface TreePalette {
+  readonly background: string;
+  readonly leaf: readonly string[];
+  readonly grass: readonly string[];
+  readonly scanLeaf: readonly string[];
+  readonly scanGrass: readonly string[];
+  readonly stone: readonly string[];
+  readonly bark: string;
+}
+
 /** Pantone Golden Apricot / Autumn Maple inspired screen colors, not official conversions. */
 export const TREE_PALETTE = {
   background: '#F6F1E7',
@@ -26,6 +38,60 @@ export const TREE_PALETTE = {
   stone: ['#E2DAC6', '#DED5BD', '#E8DFCC'],
   bark: '#78543D'
 } as const;
+
+/** Pantone TCX references guide these screen palettes; HEX values are project colors. */
+export const TREE_SEASONS: Record<TreeSeason, {
+  name: string; title: string; description: string; pantone: string; palette: TreePalette;
+  poem: { text: string; author: string; work: string; source: string };
+}> = {
+  spring: {
+    name: '春季', title: '春·初醒', description: '枝梢花苞初绽，嫩叶透光，花瓣随轻风落入短草。',
+    poem: { text: '东风随春归，发我枝上花。', author: '李白', work: '落日忆山中', source: 'https://zh.wikisource.org/zh-hans/落日憶山中' },
+    pantone: 'Rose Quartz 13-1520 TCX',
+    palette: {
+      background: TREE_PALETTE.background,
+      leaf: ['#E8B3BF', '#F0C6CE', '#D596AA', '#C5CE92', '#91AC71'],
+      grass: ['#9DAC6D', '#B4C57F', '#82945B', '#C1CA94', '#A4B67A'],
+      scanLeaf: ['#B57786', '#8A805A', '#A57583', '#BD8791', '#94986D'],
+      scanGrass: scanVariants('#6D7F57'),
+      stone: ['#E5DDCE', '#D7D5BF', '#EBE2D3'], bark: '#80604D'
+    }
+  },
+  summer: {
+    name: '夏季', title: '夏·成荫', description: '阔叶层叠成荫，风穿过叶团，光尘与树影缓缓游移。',
+    poem: { text: '孟夏草木长，绕屋树扶疏。', author: '陶渊明', work: '读《山海经》·其一', source: 'https://zh.wikisource.org/zh-hans/讀《山海經》' },
+    pantone: 'Emerald 17-5641 TCX',
+    palette: {
+      background: TREE_PALETTE.background,
+      leaf: ['#568D68', '#6CA478', '#367058', '#8EA95F', '#A7BC76'],
+      grass: ['#78945B', '#91AB68', '#617E4E', '#A9BB79', '#839E61'],
+      scanLeaf: ['#4C8D72', '#7B8B4B', '#56846A', '#6D9A76', '#8C9D58'],
+      scanGrass: scanVariants('#647A52'),
+      stone: ['#D9D6BF', '#CDCDB6', '#E4DFCC'], bark: '#73563F'
+    }
+  },
+  autumn: {
+    name: '秋季', title: '秋·风起', description: '阵风掠过金色树冠，几片叶子离枝，落叶在草间轻滚后归于安静。',
+    poem: { text: '云天收夏色，木叶动秋声。', author: '刘言史', work: '立秋', source: 'https://zh.wikisource.org/zh-hans/全唐詩/卷468' },
+    pantone: 'Honey Mustard 17-1047 / Dried Herb 17-0627 TCX', palette: TREE_PALETTE
+  },
+  winter: {
+    name: '冬季', title: '冬·风雪', description: '阵风卷起斜雪，雪片在裸枝间回旋，枝头与根部积雪层叠。',
+    poem: {
+      text: '晚来天欲雪，能饮一杯无？', author: '白居易', work: '问刘十九',
+      source: 'https://zh.wikisource.org/zh-hans/問劉十九'
+    },
+    pantone: 'Serenity 15-3919 TCX',
+    palette: {
+      background: TREE_PALETTE.background,
+      leaf: ['#E6ECED', '#F1F2EC', '#C7D4DE', '#D8E2E8', '#BACAD7'],
+      grass: ['#9B9B89', '#B8B6A1', '#888D81', '#D6DAD4', '#E1E5DF'],
+      scanLeaf: ['#71869F', '#818B96', '#7D91A6', '#8B97A3', '#698399'],
+      scanGrass: scanVariants('#6E777D'),
+      stone: ['#D4DEE1', '#C3CFD6', '#E2E7E5'], bark: '#726C67'
+    }
+  }
+};
 
 /** Soft canopy coverage in ground coordinates, independent of the encoded QR. */
 export function canopyCoverage(x: number, z: number, centers: ReadonlyArray<{ x: number; z: number }>) {
@@ -42,12 +108,12 @@ export function meadowDensity(x: number, z: number, centers: ReadonlyArray<{ x: 
   return 1 - .94 * canopyCoverage(x, z, centers);
 }
 
-// Nine visibly different, low-amplitude variants per family; never reshuffle per frame.
-const goldVariants = scanVariants(TREE_PALETTE.scanLeaf[0]).map(rgb);
-const warmVariants = scanVariants(TREE_PALETTE.scanLeaf[1]).map(rgb);
-
 /** Two diagonal leaf-color regions soften across 15%-wide bands, then fade to meadow edges. */
-export function qrModuleColors(size: number) {
+export function qrModuleColors(size: number, season: TreeSeason = 'autumn') {
+  const palette = TREE_SEASONS[season].palette;
+  // Nine stable variants per family preserve neighboring color separation through blends.
+  const goldVariants = scanVariants(palette.scanLeaf[0]).map(rgb);
+  const warmVariants = scanVariants(palette.scanLeaf[1]).map(rgb);
   const random = treeRandom();
   const colors: string[][] = [];
   for (let y = 0; y < size; y++) {
@@ -64,7 +130,7 @@ export function qrModuleColors(size: number) {
       const diagonals = [colors[y - 1]?.[x - 1], colors[y - 1]?.[x + 1]];
       const candidates = goldVariants.map((gold, variant) => {
         const leaf = blend(gold, warmVariants[variant], warm);
-        return hex(blend(leaf, rgb(TREE_PALETTE.scanGrass[variant]), meadow));
+        return hex(blend(leaf, rgb(palette.scanGrass[variant]), meadow));
       }).filter(color => !diagonals.includes(color));
       // Comparing final RGB values also protects neighbors inside the blended boundaries.
       const distinct = candidates.filter(color => neighbors.every(neighbor => colorDistance(color, neighbor) >= 14));
@@ -110,8 +176,26 @@ export function treeWind(time: number, x: number, z: number) {
   return gust * (Math.sin(time * 1.1 + x * 1.4 + z * .65) + .3 * Math.sin(time * 2.3 + z * 2.3));
 }
 
-export function treeRandom() {
-  let seed = 74819;
+/** A ten-second breeze front with a long calm gap, shared by canopy and ground leaves. */
+export function autumnGust(time: number, x: number, z: number) {
+  const cycle = 10.4;
+  const phase = ((time - (x * .8 + z * .3) * .12) % cycle + cycle) % cycle;
+  return smooth(phase / .85) * (1 - smooth((phase - 2.5) / 1.4));
+}
+
+/** Samples one spatial wind field so foliage, grasses and loose particles move together. */
+export function seasonWind(time: number, x: number, z: number, season: TreeSeason) {
+  const wave = Math.sin(time * 1.1 - x * .85 - z * .38);
+  const ripple = Math.sin(time * 2.05 - x * .4 - z * .25);
+  switch (season) {
+    case 'spring': return .19 + .16 * wave + .035 * ripple;
+    case 'summer': return .38 + .33 * wave + .09 * ripple;
+    case 'autumn': return autumnGust(time, x, z) * (.72 + .22 * wave + .06 * ripple);
+    case 'winter': return .52 + .22 * wave + .06 * ripple + .38 * Math.max(0, Math.sin(time * .62 - x * .1 - z * .04));
+  }
+}
+
+export function treeRandom(seed = 74819) {
   return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
 }
 

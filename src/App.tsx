@@ -36,6 +36,8 @@ import {
 } from './features/glass/GlassIsland';
 import { SegmentedGlassControl } from './features/glass/SegmentedGlassControl';
 import { MorphingIcon } from './features/icons/MorphingIcon';
+import { TREE_SEASONS } from './features/qrcode/magic-tree-config';
+import { useTreeSeason } from './features/qrcode/use-tree-season';
 import { useExpandableSections } from './lib/use-expandable-sections';
 import {
   buildTimestamp,
@@ -937,6 +939,7 @@ function QrcodeStep({
   startOver: () => void;
 }) {
   const [result, setResult] = useState<QrResult>({});
+  const season = useTreeSeason();
   const validation = useMemo(() => validateCourseUrl(state.url), [state.url]);
   const identityLabel = getIdentityLabel(state.identity);
   const modeLabel = getTimeModeLabel(state);
@@ -999,7 +1002,7 @@ function QrcodeStep({
             </div>
             {result.imageUrl && validation.valid ? (
               <Suspense fallback={<div className="qrcode-placeholder">{TEXT.placeholders.receiptLoading}</div>}>
-                <MagicTreeStage imageUrl={result.imageUrl} />
+                <MagicTreeStage imageUrl={result.imageUrl} season={season} />
               </Suspense>
             ) : (
               <div className="qrcode-placeholder">
@@ -1011,7 +1014,7 @@ function QrcodeStep({
             <div className="receipt-summary-island">
               <aside className="receipt-result-summary" aria-live="polite">
                 <div className="receipt-result-summary__copy">
-                  <h3>{TEXT.status.qrCodeReady}</h3>
+                  <h3>{TREE_SEASONS[season].poem.text}</h3>
                   <p>{TEXT.status.qrCodeHint}</p>
                 </div>
                 <dl className="receipt-result-summary__details">

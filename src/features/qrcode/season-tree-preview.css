@@ -1,0 +1,63 @@
+.season-preview {
+  width: min(1160px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 46px 0 40px;
+  color: #514b40;
+}
+
+.season-preview__header { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 26px; }
+.season-preview__eyebrow { margin: 0 0 9px; font-size: 12px; letter-spacing: .16em; color: #8b8273; }
+.season-preview h1 { margin: 0; font-size: clamp(30px, 4vw, 43px); line-height: 1.2; font-weight: 500; letter-spacing: .06em; }
+.season-preview__intro { margin: 12px 0 0; font-size: 13px; letter-spacing: .12em; color: #8b8273; }
+.season-preview__tabs { display: flex; gap: 4px; padding: 5px; border: 1px solid #e3ded1; border-radius: 30px; background: #faf8f1b3; box-shadow: 0 4px 15px #78685305; }
+.season-preview__tabs button { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 12px 18px; border: 0; border-radius: 22px; background: transparent; color: #817b70; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; transition: background 180ms, color 180ms, box-shadow 180ms; }
+.season-preview__tabs button[aria-selected="true"] { background: #fffdf7; color: #514b40; box-shadow: 0 2px 8px #78685312; }
+.season-preview__tabs button:hover { color: #514b40; }
+.season-preview__tabs button:focus-visible { outline: 2px solid var(--tab-color); outline-offset: 2px; }
+.season-preview__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tab-color); opacity: .65; }
+.season-preview__tabs button[aria-selected="true"] .season-preview__dot { opacity: 1; }
+
+.season-preview__scene { position: relative; height: clamp(540px, 65vh, 740px); overflow: hidden; border: 1px solid #e7decd; border-radius: 28px; background: #f6f1e7; }
+.season-preview__scene .magic-tree-stage { min-height: 100%; border-radius: inherit; }
+.season-preview__scene .magic-tree-stage__hit:focus-visible { outline-color: var(--season-accent); outline-offset: -8px; border-radius: 28px; }
+.season-preview__scene-caption { position: absolute; z-index: 1; top: 25px; left: 29px; display: flex; gap: 13px; align-items: center; color: #8c806d; font-size: 13px; pointer-events: none; }
+.season-preview__scene-caption span:first-child { padding-right: 13px; border-right: 1px solid #d8cfbd; color: #ac9d87; font-family: var(--mono); font-size: 11px; }
+.season-preview__hint { position: absolute; z-index: 1; bottom: 20px; left: 20px; right: 20px; margin: 0; text-align: center; font-size: 12px; letter-spacing: .04em; color: #908572; pointer-events: none; }
+.season-preview__details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 70px; margin-top: 30px; }
+.season-preview h2 { margin: 0 0 9px; font-size: 22px; font-weight: 500; letter-spacing: .04em; }
+.season-preview__story > p { margin: 0; font-size: 14px; line-height: 1.9; color: #81786a; }
+.season-preview__poem { margin: 16px 0; padding-left: 16px; border-left: 2px solid var(--season-accent); }
+.season-preview__poem blockquote { margin: 0; color: #596470; font-family: 'Songti SC', 'STSong', serif; font-size: clamp(17px, 2vw, 20px); line-height: 1.8; letter-spacing: .04em; }
+.season-preview__poem figcaption { margin-top: 5px; font-size: 11px; }
+.season-preview__poem a { color: #81786a; text-decoration-color: #b7b3a8; text-underline-offset: 3px; }
+.season-preview__poem a:hover { color: #514b40; }
+.season-preview__poem a:focus-visible { outline: 2px solid var(--season-accent); outline-offset: 4px; }
+.season-preview__story > .season-preview__pantone { margin-top: 15px; color: #928a7b; font-size: 11px; }
+.season-preview__palette-heading { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 10px; color: #827b6e; font-size: 11px; letter-spacing: .09em; }
+.season-preview__palette ul { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 9px; padding: 0; margin: 0; list-style: none; }
+.season-preview__palette li { min-width: 0; display: flex; flex-direction: column; gap: 7px; color: #877e6e; font-size: 10px; }
+.season-preview__swatch { height: 29px; width: 100%; border-radius: 5px; box-shadow: inset 0 0 0 1px #554b3a0b; }
+.season-preview__palette code { color: #9b9181; font-family: var(--mono); font-size: 9px; }
+.season-preview__palette > p { margin: 11px 0 0; font-size: 10px; color: #a39a8a; }
+
+@media (max-width: 720px) {
+  .season-preview { width: calc(100% - 28px); padding: 25px 0 30px; }
+  .season-preview__header { flex-direction: column; align-items: stretch; gap: 22px; margin-bottom: 16px; padding: 0 5px; }
+  .season-preview__eyebrow { font-size: 11px; }
+  .season-preview__intro { margin-top: 9px; font-size: 12px; }
+  .season-preview__tabs { align-self: stretch; }
+  .season-preview__tabs button { flex: 1; padding: 11px 8px; font-size: 12px; }
+  .season-preview__scene { height: clamp(420px, 62svh, 600px); border-radius: 22px; }
+  .season-preview__scene-caption { top: 20px; left: 19px; font-size: 12px; }
+  .season-preview__hint { bottom: 18px; font-size: 10px; left: 10px; right: 10px; }
+  .season-preview__details { grid-template-columns: minmax(0, 1fr); gap: 24px; margin: 24px 7px 0; }
+  .season-preview h2 { font-size: 21px; }
+  .season-preview__story > p { font-size: 13px; }
+  .season-preview__story > .season-preview__pantone { margin-top: 9px; font-size: 10px; }
+  .season-preview__palette ul { gap: 8px; }
+  .season-preview__swatch { height: 33px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-preview__tabs button { transition: none; }
+}

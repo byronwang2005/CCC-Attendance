@@ -2,6 +2,8 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import { TREE_SEASONS } from './features/qrcode/magic-tree-config';
+import { treeSeasonAt } from './features/qrcode/tree-season';
 import { STORAGE_KEY, TEXT } from './config';
 import { EXPAND_DURATION } from './lib/expandable-section';
 
@@ -857,7 +859,7 @@ describe('CCC Attendance first step', () => {
     await waitFor(() => expect(statusPath.getAttribute('d')).not.toBe(pending));
     expect(morphPath(document.querySelector('.qr-status-mark'))).toBe(statusPath);
     if (outcome === 'success') {
-      expect(screen.getByText(TEXT.status.qrCodeReady)).toBeVisible();
+      expect(screen.getByText(TREE_SEASONS[treeSeasonAt()].poem.text)).toBeVisible();
     } else {
       expect(screen.getByRole('alertdialog')).toHaveTextContent('二维码生成失败');
     }
