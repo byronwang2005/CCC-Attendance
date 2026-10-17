@@ -3213,7 +3213,7 @@ input[type="number"] {
 
 .receipt-result-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.34fr) minmax(248px, .66fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
   gap: 18px;
   width: 100%;
   height: 100%;
@@ -3314,16 +3314,18 @@ input[type="number"] {
 }
 
 .receipt-result-summary__copy {
+  container-type: inline-size;
+  width: 100%;
   margin: 0;
 }
 
 .receipt-result-summary__copy h3 {
   margin: 0;
   color: var(--near-black);
-  font-size: 28px;
+  font-size: clamp(16px, 8cqi, 28px);
   font-weight: 700;
   line-height: 1.5;
-  text-wrap: balance;
+  text-wrap: wrap;
 }
 
  .receipt-result-summary__copy p {
@@ -3363,7 +3365,7 @@ input[type="number"] {
   }
 
   .receipt-result-summary__copy h3 {
-    font-size: 21px;
+    font-size: clamp(18px, 8cqi, 21px);
   }
 
 }
@@ -3384,7 +3386,7 @@ input[type="number"] {
 
   .receipt-result-summary__copy h3 {
     font-family: var(--serif);
-    font-size: 23px;
+    font-size: clamp(18px, 8cqi, 23px);
     font-weight: 500;
     line-height: 1.18;
   }
