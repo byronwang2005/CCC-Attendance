@@ -3427,7 +3427,7 @@ input[type="number"] {
 
 }
 
-/* Transparent autumn grove; the scene itself remains the interactive surface. */
+/* Transparent seasonal grove; the scene itself remains the interactive surface. */
 .magic-tree-stage {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
@@ -3486,31 +3486,8 @@ input[type="number"] {
   min-width: 0;
 }
 
-.qr-status-mark {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgb(255 255 255 / 66%);
-  border-radius: 12px;
-  background: rgb(250 248 241 / 78%);
-  color: var(--brand);
-  pointer-events: none;
-}
-
 @media (max-width: 720px) {
   .choice-card {
     gap: 8px;
-  }
-
-  .qr-status-mark {
-    top: 8px;
-    left: 8px;
-    width: 30px;
-    height: 30px;
   }
 }

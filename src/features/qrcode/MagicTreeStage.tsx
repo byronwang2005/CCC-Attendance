@@ -38,7 +38,7 @@ export function MagicTreeStage({ imageUrl, season }: MagicTreeStageProps) {
     scene.current?.setQr(next);
   };
   return (
-    <div className="magic-tree-stage" style={season ? { backgroundColor: TREE_SEASONS[season].palette.background } : undefined} data-season={season ?? 'autumn'} data-state={qr ? 'qr' : 'tree'}>
+    <div className="magic-tree-stage" data-season={season ?? 'autumn'} data-state={qr ? 'qr' : 'tree'}>
       <div className="magic-tree-stage__viewport">
         <div ref={host} className="magic-tree-stage__canvas" aria-hidden="true" />
         {status === 'ready' && <button type="button" className="magic-tree-stage__hit" onClick={toggle} aria-label={qr ? `返回${TREE_SEASONS[season ?? 'autumn'].name}树景` : '俯视查看二维码'} aria-pressed={qr} />}

@@ -16,13 +16,11 @@ import {
   Bot,
   CalendarClock,
   Check,
-  CircleAlert,
   CircleCheck,
   Clock,
   Copy,
   Link,
   QrCode,
-  ScanLine,
   User
 } from 'lucide';
 import { AGENT_PROMPT, APP_PATHS, TEXT, TIME_LIMITS } from './config';
@@ -997,9 +995,6 @@ function QrcodeStep({
       <section className="receipt-panel panel">
         <div className={`receipt-result-layout${result.imageUrl ? ' is-ready' : ' is-pending'}`}>
           <div id="qrcode" className="qrcode-stage" aria-label="二维码，就位">
-            <div className="qr-status-mark" aria-hidden="true">
-              <MorphingIcon icon={result.message ? CircleAlert : result.imageUrl ? CircleCheck : ScanLine} />
-            </div>
             {result.imageUrl && validation.valid ? (
               <Suspense fallback={<div className="qrcode-placeholder">{TEXT.placeholders.receiptLoading}</div>}>
                 <MagicTreeStage imageUrl={result.imageUrl} season={season} />

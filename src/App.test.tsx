@@ -837,7 +837,7 @@ describe('CCC Attendance first step', () => {
     expect(morphPath(document.querySelector('.masthead__summary'))).toBe(stepPath);
   });
 
-  it.each(['success', 'error'] as const)('morphs QR status from pending to %s', async (outcome) => {
+  it.each(['success', 'error'] as const)('shows QR generation %s without a status badge', async (outcome) => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=3');
     let finishFetch: (response: Response) => void = () => {};
@@ -849,15 +849,13 @@ describe('CCC Attendance first step', () => {
     render(<App />);
 
     expect(await screen.findByRole('button', { name: '生成更多' }, { timeout: 2000 })).toBeVisible();
-    const statusPath = morphPath(document.querySelector('.qr-status-mark'));
-    const pending = statusPath.getAttribute('d');
+    expect(document.querySelector('.qr-status-mark')).toBeNull();
     await act(async () => {
       finishFetch(outcome === 'success'
         ? new Response(new Blob(['qr']), { status: 200 })
         : new Response('generation failed', { status: 500 }));
     });
-    await waitFor(() => expect(statusPath.getAttribute('d')).not.toBe(pending));
-    expect(morphPath(document.querySelector('.qr-status-mark'))).toBe(statusPath);
+    expect(document.querySelector('.qr-status-mark')).toBeNull();
     if (outcome === 'success') {
       expect(screen.getByText(TREE_SEASONS[treeSeasonAt()].poem.text)).toBeVisible();
     } else {
