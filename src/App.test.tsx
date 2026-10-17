@@ -86,6 +86,7 @@ describe('CCC Attendance first step', () => {
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
+    expect(document.querySelector('.masthead__summary svg')).toBeNull();
     const footer = screen.getByRole('contentinfo');
     const workflow = document.querySelector('.workflow-frame');
     const licenseLink = screen.getByRole('link', { name: 'MIT License' });
@@ -816,27 +817,6 @@ describe('CCC Attendance first step', () => {
     expect(manual).toBeChecked();
   });
 
-  it('keeps one step icon mounted through forward and backward navigation', async () => {
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
-    vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
-    const user = userEvent.setup();
-    render(<App />);
-    expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
-
-    const stepPath = morphPath(document.querySelector('.masthead__summary'));
-    const firstStep = stepPath.getAttribute('d');
-    await user.click(screen.getByRole('button', { name: '下一步' }));
-    expect(await screen.findByRole('heading', { name: '再选择时间模式' })).toBeVisible();
-    await waitFor(() => expect(stepPath.getAttribute('d')).not.toBe(firstStep));
-    const secondStep = stepPath.getAttribute('d');
-    await user.click(screen.getByRole('button', { name: '下一步' }));
-    expect(await screen.findByRole('button', { name: '生成更多' })).toBeVisible();
-    await waitFor(() => expect(stepPath.getAttribute('d')).not.toBe(secondStep));
-    await user.click(screen.getByRole('button', { name: '返回上一步' }));
-    await waitFor(() => expect(stepPath.getAttribute('d')).toBe(secondStep));
-    expect(morphPath(document.querySelector('.masthead__summary'))).toBe(stepPath);
-  });
-
   it.each(['success', 'error'] as const)('shows QR generation %s without a status badge', async (outcome) => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=3');
@@ -857,6 +837,7 @@ describe('CCC Attendance first step', () => {
     });
     expect(document.querySelector('.qr-status-mark')).toBeNull();
     if (outcome === 'success') {
+      expect(document.querySelector('.receipt-result-summary__details')).toBeNull();
       expect(screen.getByText(TREE_SEASONS[treeSeasonAt()].poem.text)).toBeVisible();
     } else {
       expect(screen.getByRole('alertdialog')).toHaveTextContent('二维码生成失败');

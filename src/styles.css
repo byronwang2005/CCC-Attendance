@@ -3334,38 +3334,6 @@ input[type="number"] {
   opacity: .65;
 }
 
-.receipt-result-summary__details {
-  display: grid;
-  gap: 0;
-  margin: 24px 0 0;
-}
-
-.receipt-result-summary__details > div {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: 12px;
-  padding: 9px 0;
-  border-top: 1px solid color-mix(in srgb, var(--border-warm) 72%, transparent);
-}
-
-.receipt-result-summary__details dt,
-.receipt-result-summary__details dd {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.receipt-result-summary__details dt {
-  color: var(--stone);
-}
-
-.receipt-result-summary__details dd {
-  min-width: 0;
-  color: var(--dark-warm);
-  font-family: var(--mono);
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 980px) {
   .receipt-panel {
     padding: 14px;
@@ -3387,10 +3355,6 @@ input[type="number"] {
 
   .receipt-result-summary {
     padding: 14px 16px;
-  }
-
-  .receipt-result-summary__details {
-    display: none;
   }
 
   .receipt-result-summary__copy {
@@ -3458,11 +3422,6 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.masthead__step-icon {
-  width: 14px;
-  height: 14px;
 }
 
 .choice-card {

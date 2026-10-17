@@ -19,8 +19,6 @@ import {
   CircleCheck,
   Clock,
   Copy,
-  Link,
-  QrCode,
   User
 } from 'lucide';
 import { AGENT_PROMPT, APP_PATHS, TEXT, TIME_LIMITS } from './config';
@@ -41,10 +39,7 @@ import {
   buildTimestamp,
   clearState,
   formatCurrentTime,
-  formatDateTime,
   formatDateValue,
-  getIdentityLabel,
-  getTimeModeLabel,
   loadState,
   parseErrorMessage,
   persistState,
@@ -468,11 +463,6 @@ function PageShell({
               <div className="masthead__copy">
                 <h1 className="masthead__title">CCC Attendance</h1>
                 <p className="masthead__summary">
-                  <MorphingIcon
-                    icon={currentStep === 1 ? Link : currentStep === 2 ? Clock : QrCode}
-                    className="masthead__step-icon"
-                    size={14}
-                  />
                   <span>一个签到码，三步搞定</span>
                 </p>
               </div>
@@ -939,8 +929,6 @@ function QrcodeStep({
   const [result, setResult] = useState<QrResult>({});
   const season = useTreeSeason();
   const validation = useMemo(() => validateCourseUrl(state.url), [state.url]);
-  const identityLabel = getIdentityLabel(state.identity);
-  const modeLabel = getTimeModeLabel(state);
 
   useEffect(() => {
     if (!validation.valid) return;
@@ -965,11 +953,7 @@ function QrcodeStep({
         if (!response.ok) throw new Error(parseErrorMessage(await response.text()));
         objectUrl = URL.createObjectURL(await response.blob());
         if (active) {
-          setResult({
-            imageUrl: objectUrl,
-            generatedTime: formatDateTime(Date.now()),
-            validTime: formatDateTime(timestamp)
-          });
+          setResult({ imageUrl: objectUrl });
         }
       } catch (error) {
         const message = error instanceof Error && error.message === 'Failed to fetch'
@@ -1012,13 +996,6 @@ function QrcodeStep({
                   <h3>{TREE_SEASONS[season].poem.text}</h3>
                   <p>{TEXT.status.qrCodeHint}</p>
                 </div>
-                <dl className="receipt-result-summary__details">
-                  <div><dt>生成时间</dt><dd>{result.generatedTime}</dd></div>
-                  <div><dt>模式</dt><dd>{modeLabel}</dd></div>
-                  <div><dt>身份</dt><dd>{identityLabel}</dd></div>
-                  <div><dt>课程ID</dt><dd>{validation.scheduleId}</dd></div>
-                  <div><dt>有效时间</dt><dd>{result.validTime}</dd></div>
-                </dl>
               </aside>
             </div>
           )}
