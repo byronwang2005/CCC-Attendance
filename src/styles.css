@@ -3308,8 +3308,8 @@ input[type="number"] {
   min-width: 0;
   height: 100%;
   flex-direction: column;
-  justify-content: center;
-  padding: 26px 24px;
+  justify-content: flex-start;
+  padding: clamp(48px, 10vh, 96px) 24px 26px;
   background: transparent;
 }
 
