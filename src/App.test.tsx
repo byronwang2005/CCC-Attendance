@@ -49,6 +49,14 @@ const morphPath = (root: Element | null) => {
   return path!;
 };
 
+const renderReadyApp = async () => {
+  const view = render(<App />);
+  const notice = await screen.findByRole('dialog', { name: '山水有相逢' }, { timeout: 2000 });
+  fireEvent.click(screen.getByRole('button', { name: '关闭提示' }));
+  await waitFor(() => expect(notice).not.toBeInTheDocument());
+  return view;
+};
+
 describe('CCC Attendance first step', () => {
   afterEach(() => {
     cleanup();
@@ -82,7 +90,7 @@ describe('CCC Attendance first step', () => {
   });
 
   it('places the open-source metadata in the workflow with safe external links', async () => {
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
@@ -104,7 +112,7 @@ describe('CCC Attendance first step', () => {
 
   it('preserves the identity flow and enables the next action for a course link', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '人类' }));
@@ -118,7 +126,7 @@ describe('CCC Attendance first step', () => {
 
   it('switches steps without remounting the global loader', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '人类' }));
@@ -136,7 +144,7 @@ describe('CCC Attendance first step', () => {
   it('keeps the stage fallback background synchronized with every ink palette', async () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     const stage = document.querySelector<HTMLElement>('.app-stage');
@@ -170,7 +178,7 @@ describe('CCC Attendance first step', () => {
     }));
     const { startViewTransition, transitions } = installViewTransitionMock();
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     expect(document.querySelector('.stepper')).toHaveAttribute('data-current-step', '1');
@@ -211,7 +219,7 @@ describe('CCC Attendance first step', () => {
       dispatchEvent: vi.fn()
     }));
     const { startViewTransition, transitions } = installViewTransitionMock();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     window.history.pushState({}, '', '/index.html?step=1');
@@ -239,7 +247,7 @@ describe('CCC Attendance first step', () => {
     }));
     const { startViewTransition } = installViewTransitionMock();
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '返回上一步' }));
@@ -262,7 +270,7 @@ describe('CCC Attendance first step', () => {
   it('allows history navigation to a later step when the current form state is valid', async () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '人类' }));
@@ -322,7 +330,7 @@ describe('CCC Attendance first step', () => {
   });
 
   it('rejects invalid browser history navigation once without looping', async () => {
-    render(<App />);
+    await renderReadyApp();
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
     window.history.pushState({}, '', '/index.html?step=2');
@@ -347,7 +355,7 @@ describe('CCC Attendance first step', () => {
       dispatchEvent: vi.fn()
     }));
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '下一步' }));
@@ -373,7 +381,7 @@ describe('CCC Attendance first step', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
     const { transitions } = installViewTransitionMock();
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '下一步' }));
@@ -401,7 +409,7 @@ describe('CCC Attendance first step', () => {
       })
     });
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('button', { name: '生成更多' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '生成更多' }));
@@ -416,7 +424,7 @@ describe('CCC Attendance first step', () => {
 
   it('preserves the agent prompt and keeps the next action unavailable', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '智能体' }));
@@ -435,7 +443,7 @@ describe('CCC Attendance first step', () => {
 
   it('uses glass material for guide indexes, inline emphasis, and the course link input', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '人类' }));
@@ -483,7 +491,7 @@ describe('CCC Attendance first step', () => {
       dispatchEvent: vi.fn()
     }));
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     await user.click(screen.getByRole('button', { name: '跳转到第 2 步' }));
@@ -498,7 +506,7 @@ describe('CCC Attendance first step', () => {
 
   it('keeps both identity sections mounted while switching their expandable state', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     const humanGuide = screen.getByRole('heading', { name: '卡准时间', hidden: true });
@@ -552,7 +560,7 @@ describe('CCC Attendance first step', () => {
     });
 
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: '人类' }));
@@ -582,7 +590,7 @@ describe('CCC Attendance first step', () => {
       timeMode: 'auto'
     }));
     window.history.replaceState({}, '', '/index.html?step=2');
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     const dateSelect = document.getElementById('date');
@@ -630,7 +638,7 @@ describe('CCC Attendance first step', () => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=2');
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     const manualTime = document.getElementById('manualTime');
@@ -684,6 +692,10 @@ describe('CCC Attendance first step', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(520);
     });
+    fireEvent.click(screen.getByRole('button', { name: '关闭提示' }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(220);
+    });
     expect(screen.getByRole('heading', { name: '再选择时间模式' })).toBeVisible();
 
     const panel = document.querySelector<HTMLElement>('.time-panel');
@@ -727,7 +739,7 @@ describe('CCC Attendance first step', () => {
     const user = userEvent.setup();
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=2');
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
     const panel = document.querySelector<HTMLElement>('.time-panel');
@@ -758,7 +770,7 @@ describe('CCC Attendance first step', () => {
 
   it('morphs identity icons and copy feedback in place', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
 
     const human = screen.getByRole('button', { name: '人类' });
@@ -790,7 +802,7 @@ describe('CCC Attendance first step', () => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(validWizardState));
     window.history.replaceState({}, '', '/index.html?step=2');
     const user = userEvent.setup();
-    render(<App />);
+    await renderReadyApp();
     expect(await screen.findByRole('heading', { name: '再选择时间模式' }, { timeout: 2000 })).toBeVisible();
 
     const auto = screen.getByRole('radio', { name: /^自动/ });
@@ -826,7 +838,7 @@ describe('CCC Attendance first step', () => {
     }));
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test-qr');
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('button', { name: '生成更多' }, { timeout: 2000 })).toBeVisible();
     expect(document.querySelector('.qr-status-mark')).toBeNull();
@@ -852,7 +864,7 @@ describe('CCC Attendance first step', () => {
       vi.spyOn(globalThis, 'fetch').mockReturnValue(new Promise(() => {}));
     }
     window.history.replaceState({}, '', `/index.html?step=${step}`);
-    render(<App />);
+    await renderReadyApp();
 
     expect(await screen.findByRole('heading', { name: 'CCC Attendance' }, { timeout: 2000 })).toBeVisible();
     expect(document.querySelector('.step-artwork')).not.toBeInTheDocument();

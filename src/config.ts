@@ -15,6 +15,15 @@ export const TIME_LIMITS = {
 
 export const AGENT_PROMPT = 'Please read the instruction in "https://ccc.byron.wang/agent.md" and assist the user to generate the QR code.';
 
+export const FAREWELL_NOTICE = {
+  title: '山水有相逢',
+  message: [
+    '承蒙诸位一路相伴。据开源社区反馈，本项目现已失效。这一程，便在此收帆。',
+    '网站仍将保留，留作这段同行岁月的纪念。来日或辟一面留言墙，容故人题字、过客留声；其余新意，且待来日。',
+    '青山不改，绿水长流。诸位珍重，我们江湖再见。'
+  ].join('\n\n')
+} as const;
+
 export const TEXT = {
   errors: {
     chooseIdentityFirst: '请先选择身份（人类或智能体）',

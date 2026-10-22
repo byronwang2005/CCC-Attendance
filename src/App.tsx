@@ -6,6 +6,7 @@ import {
   lazy,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useReducer,
   useRef,
@@ -21,7 +22,7 @@ import {
   Copy,
   User
 } from 'lucide';
-import { AGENT_PROMPT, APP_PATHS, TEXT, TIME_LIMITS } from './config';
+import { AGENT_PROMPT, APP_PATHS, FAREWELL_NOTICE, TEXT, TIME_LIMITS } from './config';
 import { InkFlowBackground } from './features/background/InkFlowBackground';
 import { INK_PALETTES, type InkStep } from './features/background/ink-flow-config';
 import {
@@ -69,6 +70,7 @@ const scheduleMagicTreeStagePreload = () => {
 const NAVIGATION_EVENT = 'ccc:navigate';
 const STEP_TRANSITION_DURATION = 520;
 const TOAST_EXIT_DURATION = 220;
+const FAREWELL_TOAST: ToastState = { ...FAREWELL_NOTICE, type: 'notice' };
 
 type StepDirection = 'forward' | 'backward';
 
@@ -391,12 +393,33 @@ function Footer() {
 }
 
 function Toast({ toast, onClose }: { toast: ToastState | null; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<number>(0);
   const [isClosing, setIsClosing] = useState(false);
+  const titleId = useId();
+  const messageId = useId();
 
   useEffect(() => {
-    if (toast) closeRef.current?.focus();
+    if (!toast || toast.type === 'success') return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const containFocus = (event: FocusEvent) => {
+      if (!dialogRef.current?.contains(event.target as Node)) {
+        closeRef.current?.focus({ preventScroll: true });
+      }
+    };
+    closeRef.current?.focus({ preventScroll: true });
+    document.addEventListener('focusin', containFocus);
+    return () => {
+      document.removeEventListener('focusin', containFocus);
+      document.body.style.overflow = previousOverflow;
+      const target = previousFocus?.isConnected && previousFocus !== document.body
+        ? previousFocus
+        : document.querySelector<HTMLElement>('.masthead__title');
+      target?.focus({ preventScroll: true });
+    };
   }, [toast]);
 
   useEffect(() => () => window.clearTimeout(closeTimerRef.current), []);
@@ -411,15 +434,46 @@ function Toast({ toast, onClose }: { toast: ToastState | null; onClose: () => vo
     closeTimerRef.current = window.setTimeout(onClose, TOAST_EXIT_DURATION);
   };
 
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      requestClose();
+    } else if (event.key === 'Tab') {
+      const targets = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+      );
+      const first = targets?.[0];
+      const last = targets?.[targets.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+  };
+
   if (!toast || toast.type === 'success') return null;
   return (
-    <div className={`toast ${toast.type} show${isClosing ? ' is-exiting' : ''}`} role="alertdialog" aria-live="assertive" aria-modal="true" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) requestClose();
-    }}>
+    <div
+      ref={dialogRef}
+      className={`toast ${toast.type} show${isClosing ? ' is-exiting' : ''}`}
+      role={toast.type === 'notice' ? 'dialog' : 'alertdialog'}
+      aria-live={toast.type === 'notice' ? undefined : 'assertive'}
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={messageId}
+      onKeyDown={onKeyDown}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) requestClose();
+      }}
+    >
       <StaticGlassIsland shape="panel" className="toast-island">
         <div className="toast__window">
           <div className="toast__header">
-            <div className="toast__label">提示</div>
+            <h2 id={titleId} className="toast__label">{toast.title ?? '提示'}</h2>
             <GlassIsland
               variant="interactive"
               shape="capsule"
@@ -431,7 +485,7 @@ function Toast({ toast, onClose }: { toast: ToastState | null; onClose: () => vo
               </button>
             </GlassIsland>
           </div>
-          <div className="toast__message">{toast.message}</div>
+          <div id={messageId} className="toast__message" tabIndex={0}>{toast.message}</div>
         </div>
       </StaticGlassIsland>
     </div>
@@ -442,11 +496,13 @@ function PageShell({
   currentStep,
   state,
   onLocked,
+  inert,
   children
 }: {
   currentStep: InkStep;
   state: WizardState;
   onLocked: (message: string) => void;
+  inert: boolean;
   children: ReactNode;
 }) {
   const stageStyle = {
@@ -454,14 +510,14 @@ function PageShell({
   } as CSSProperties;
 
   return (
-    <div className="app-stage" data-step={currentStep} style={stageStyle}>
+    <div className="app-stage" data-step={currentStep} style={stageStyle} inert={inert}>
       <InkFlowBackground step={currentStep} />
       <div className="page-shell">
           <StaticGlassIsland shape="capsule" className="masthead-island">
             <header className="masthead" aria-label="站点抬头">
               <img src="/assets/images/ccc-small.webp" className="masthead__logo" alt="CCC" />
               <div className="masthead__copy">
-                <h1 className="masthead__title">CCC Attendance</h1>
+                <h1 className="masthead__title" tabIndex={-1}>CCC Attendance</h1>
                 <p className="masthead__summary">
                   <span>一个签到码，三步搞定</span>
                 </p>
@@ -1024,6 +1080,8 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [state, dispatch] = useReducer(stateReducer, undefined, loadState);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const visibleToast = toast ?? (noticeDismissed ? null : FAREWELL_TOAST);
   const isStartingOverRef = useRef(false);
   const currentStep = useCurrentStep();
   const showToast = useCallback((message: string) => setToast({ message, type: 'error' }), []);
@@ -1065,7 +1123,7 @@ export default function App() {
 
   return (
     <>
-      <PageShell currentStep={currentStep} state={state} onLocked={showToast}>
+      <PageShell currentStep={currentStep} state={state} onLocked={showToast} inert={visibleToast !== null && visibleToast.type !== 'success'}>
         {currentStep === 1 && <IdentityStep state={state} update={update} showToast={showToast} />}
         {currentStep === 2 && <TimeStep state={state} update={update} showToast={showToast} />}
         {currentStep === 3 && (
@@ -1082,7 +1140,14 @@ export default function App() {
           />
         )}
       </PageShell>
-      <Toast key={toast ? `${toast.type}:${toast.message}` : 'none'} toast={toast} onClose={() => setToast(null)} />
+      <Toast
+        key={visibleToast ? `${visibleToast.type}:${visibleToast.message}` : 'none'}
+        toast={visibleToast}
+        onClose={() => {
+          if (toast) setToast(null);
+          else setNoticeDismissed(true);
+        }}
+      />
     </>
   );
 }

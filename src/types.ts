@@ -15,8 +15,9 @@ export interface WizardState {
 }
 
 export interface ToastState {
+  title?: string;
   message: string;
-  type: 'error' | 'success';
+  type: 'error' | 'success' | 'notice';
 }
 
 export interface QrResult {
